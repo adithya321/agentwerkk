@@ -6,37 +6,73 @@ import PipelineLog, { type AgentDef, type AgentStatus, type LogEntry } from './c
 import ClodPanel from './components/ClodPanel'
 import OutputPanel from './components/OutputPanel'
 import SponsorStrip, { type SponsorState } from './components/SponsorStrip'
+import { DEMO_EVENTS } from '@/lib/demo-script'
 
 const AGENTS: AgentDef[] = [
   { id: 'orchestrator', emoji: '🎯', name: 'Orchestrator', role: 'plan + delegate' },
-  { id: 'repo-scout', emoji: '🔍', name: 'Repo Scout', role: 'index codebase' },
-  { id: 'docs-scout', emoji: '📚', name: 'Docs Scout', role: 'fetch context' },
-  { id: 'fix-agent', emoji: '🔧', name: 'Fix Agent', role: 'author patch' },
-  { id: 'github', emoji: '🐙', name: 'GitHub', role: 'open PR' },
-  { id: 'reputation', emoji: '⭐', name: 'Reputation', role: 'on-chain rating' },
+  { id: 'repo-scout',   emoji: '🔍', name: 'Repo Scout',   role: 'index codebase' },
+  { id: 'docs-scout',   emoji: '📚', name: 'Docs Scout',   role: 'fetch context' },
+  { id: 'fix-agent',    emoji: '🔧', name: 'Fix Agent',    role: 'author patch' },
+  { id: 'github',       emoji: '🐙', name: 'GitHub',       role: 'open PR' },
+  { id: 'reputation',   emoji: '⭐', name: 'Reputation',   role: 'on-chain rating' },
 ]
 
 const INITIAL_STATUSES = (): Record<string, AgentStatus> =>
   AGENTS.reduce(
-    (acc, a) => {
-      acc[a.id] = { status: 'queued' }
-      return acc
-    },
+    (acc, a) => { acc[a.id] = { status: 'queued' }; return acc },
     {} as Record<string, AgentStatus>
   )
 
 export default function Home() {
-  const [statuses, setStatuses] = useState<Record<string, AgentStatus>>(INITIAL_STATUSES)
+  const [statuses,   setStatuses]   = useState<Record<string, AgentStatus>>(INITIAL_STATUSES)
   const [logEntries, setLogEntries] = useState<LogEntry[]>([])
-  const [clod, setClod] = useState<ClodUsage | null>(null)
-  const [pr, setPr] = useState<{ url: string; repo?: string; num?: number } | null>(null)
-  const [tx, setTx] = useState<{ hash: string; explorerUrl: string } | null>(null)
-  const [sponsors, setSponsors] = useState<Record<string, SponsorState>>({})
-  const [running, setRunning] = useState(false)
-  const [done, setDone] = useState(false)
+  const [clod,       setClod]       = useState<ClodUsage | null>(null)
+  const [pr,         setPr]         = useState<{ url: string; repo?: string; num?: number } | null>(null)
+  const [tx,         setTx]         = useState<{ hash: string; explorerUrl: string } | null>(null)
+  const [sponsors,   setSponsors]   = useState<Record<string, SponsorState>>({})
+  const [running,    setRunning]    = useState(false)
+  const [done,       setDone]       = useState(false)
   const t0Ref = useRef<number>(0)
 
-  const handleSubmit = useCallback(async (issueUrl: string, bountyUsdc: number) => {
+  // Shared event dispatcher — used by both SSE stream and demo replay
+  const consumeEvent = useCallback((event: PipelineEvent) => {
+    const ts = Date.now() - t0Ref.current
+
+    if (event.type === 'status') {
+      setStatuses((s) => ({
+        ...s,
+        [event.agent]: { status: event.status, message: event.message, ts },
+      }))
+      setLogEntries((prev) => [
+        ...prev,
+        {
+          ts,
+          agent: event.agent,
+          message: `→ ${event.status}${event.message ? ' · ' + event.message : ''}`,
+          level: event.status === 'error' ? 'error' : 'info',
+        },
+      ])
+    } else if (event.type === 'log') {
+      setLogEntries((prev) => [
+        ...prev,
+        { ts, agent: event.agent, message: event.message, level: event.level },
+      ])
+    } else if (event.type === 'clod_usage') {
+      setClod(event.data)
+    } else if (event.type === 'pr_created') {
+      const m = event.url.match(/github\.com\/([^/]+\/[^/]+)\/pull\/(\d+)/)
+      setPr({ url: event.url, repo: m?.[1], num: m ? parseInt(m[2], 10) : undefined })
+    } else if (event.type === 'reputation_updated') {
+      setTx({ hash: event.txHash, explorerUrl: event.explorerUrl })
+    } else if (event.type === 'sponsor') {
+      setSponsors((s) => ({ ...s, [event.id]: { value: event.value, sub: event.sub } }))
+    } else if (event.type === 'done' || event.type === 'error') {
+      setRunning(false)
+      setDone(true)
+    }
+  }, [])
+
+  const resetState = () => {
     setStatuses(INITIAL_STATUSES())
     setLogEntries([])
     setClod(null)
@@ -46,6 +82,10 @@ export default function Home() {
     setRunning(true)
     setDone(false)
     t0Ref.current = Date.now()
+  }
+
+  const handleSubmit = useCallback(async (issueUrl: string, bountyUsdc: number) => {
+    resetState()
 
     const response = await fetch('/api/run', {
       method: 'POST',
@@ -60,43 +100,9 @@ export default function Home() {
     const consumeSseLine = (line: string) => {
       if (!line.startsWith('data: ')) return
       try {
-        const event = JSON.parse(line.slice(6)) as PipelineEvent
-        const ts = Date.now() - t0Ref.current
-
-        if (event.type === 'status') {
-          setStatuses((s) => ({
-            ...s,
-            [event.agent]: { status: event.status, message: event.message, ts },
-          }))
-          setLogEntries((prev) => [
-            ...prev,
-            {
-              ts,
-              agent: event.agent,
-              message: `→ ${event.status}${event.message ? ' · ' + event.message : ''}`,
-              level: event.status === 'error' ? 'error' : 'info',
-            },
-          ])
-        } else if (event.type === 'log') {
-          setLogEntries((prev) => [
-            ...prev,
-            { ts, agent: event.agent, message: event.message, level: event.level },
-          ])
-        } else if (event.type === 'clod_usage') {
-          setClod(event.data)
-        } else if (event.type === 'pr_created') {
-          const m = event.url.match(/github\.com\/([^/]+\/[^/]+)\/pull\/(\d+)/)
-          setPr({ url: event.url, repo: m?.[1], num: m ? parseInt(m[2], 10) : undefined })
-        } else if (event.type === 'reputation_updated') {
-          setTx({ hash: event.txHash, explorerUrl: event.explorerUrl })
-        } else if (event.type === 'sponsor') {
-          setSponsors((s) => ({ ...s, [event.id]: { value: event.value, sub: event.sub } }))
-        } else if (event.type === 'done' || event.type === 'error') {
-          setRunning(false)
-          setDone(true)
-        }
+        consumeEvent(JSON.parse(line.slice(6)) as PipelineEvent)
       } catch {
-        // ignore malformed frames / partial JSON
+        // ignore malformed / partial frames
       }
     }
 
@@ -106,20 +112,23 @@ export default function Home() {
       buffer += decoder.decode(value, { stream: true })
       const lines = buffer.split('\n')
       buffer = lines.pop() ?? ''
-      for (const line of lines) {
-        consumeSseLine(line)
-      }
+      for (const line of lines) consumeSseLine(line)
     }
     buffer += decoder.decode()
-    for (const line of buffer.split('\n')) {
-      consumeSseLine(line)
-    }
+    for (const line of buffer.split('\n')) consumeSseLine(line)
     setRunning(false)
-  }, [])
+  }, [consumeEvent])
+
+  const runDemo = useCallback(() => {
+    resetState()
+    DEMO_EVENTS.forEach(({ delayMs, event }) => {
+      setTimeout(() => consumeEvent(event), delayMs)
+    })
+  }, [consumeEvent])
 
   const completedCount = AGENTS.filter((a) => statuses[a.id]?.status === 'done').length
-  const elapsed = logEntries.length ? logEntries[logEntries.length - 1].ts : 0
-  const pillLabel = running ? 'pipeline active' : done ? 'pipeline complete' : 'idle'
+  const elapsed        = logEntries.length ? logEntries[logEntries.length - 1].ts : 0
+  const pillLabel      = running ? 'pipeline active' : done ? 'pipeline complete' : 'idle'
 
   return (
     <div className="app">
@@ -162,7 +171,7 @@ export default function Home() {
 
       <div className="grid-layout">
         <div className="col">
-          <BountyForm onSubmit={handleSubmit} disabled={running} />
+          <BountyForm onSubmit={handleSubmit} onDemo={runDemo} disabled={running} />
           <PipelineLog
             agents={AGENTS}
             statuses={statuses}
