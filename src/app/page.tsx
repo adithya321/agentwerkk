@@ -5,7 +5,7 @@ import BountyForm from './components/BountyForm'
 import PipelineLog, { type AgentDef, type AgentStatus, type LogEntry } from './components/PipelineLog'
 import ClodPanel from './components/ClodPanel'
 import OutputPanel from './components/OutputPanel'
-import SponsorStrip, { type SponsorState } from './components/SponsorStrip'
+import SponsorStrip, { SponsorCard, BGA_CARD, type SponsorState } from './components/SponsorStrip'
 import { DEMO_EVENTS } from '@/lib/demo-script'
 
 const AGENTS: AgentDef[] = [
@@ -185,6 +185,9 @@ export default function Home() {
           <SponsorStrip sponsors={sponsors} />
           <ClodPanel usage={clod} running={running} done={done} />
           <OutputPanel pr={pr} tx={tx} />
+          <div className="sponsors" style={{ gridTemplateColumns: '1fr' }}>
+            <SponsorCard config={BGA_CARD} data={sponsors['bga']} />
+          </div>
         </div>
       </div>
 
