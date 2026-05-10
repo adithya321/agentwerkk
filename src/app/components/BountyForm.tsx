@@ -34,6 +34,7 @@ export default function BountyForm({ onSubmit, disabled }: Props) {
               <span className="prefix">🐙</span>
               <input
                 className="input with-prefix"
+                type="url"
                 value={issueUrl}
                 onChange={(e) => setIssueUrl(e.target.value)}
                 placeholder="https://github.com/owner/repo/issues/123"
