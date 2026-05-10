@@ -1,4 +1,5 @@
 'use client'
+import type { ReactNode } from 'react'
 import { useCountUp } from '@/lib/hooks'
 
 export interface SponsorState {
@@ -15,7 +16,7 @@ interface CardConfig {
   idleLabel: string
   barTo: number
   formatNum: (v: number) => string
-  foot: (active: boolean) => React.ReactNode
+  foot: (active: boolean) => ReactNode
 }
 
 const CARDS: CardConfig[] = [
