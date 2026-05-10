@@ -24,7 +24,7 @@ export default function ClodPanel({ usage, running, done }: Props) {
   const liveLabel = running ? 'streaming' : has ? 'finalized' : done ? 'complete' : 'idle'
 
   return (
-    <div className="clod">
+    <div className={`clod${running ? ' clod-running' : ''}`}>
       <div className="clod-inner">
         <div className="clod-head">
           <div className="clod-eyebrow">
