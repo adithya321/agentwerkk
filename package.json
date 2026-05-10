@@ -13,7 +13,7 @@
     "deploy": "TS_NODE_PROJECT=tsconfig.hardhat.json hardhat run scripts/deploy.ts --network baseSepolia"
   },
   "dependencies": {
-    "next": "15.3.2",
+    "next": "15.3.8",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "viem": "^2.21.54",
