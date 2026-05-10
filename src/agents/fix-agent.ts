@@ -27,7 +27,9 @@ ${filesSection || '(none found)'}
 ${docsSection || '(none found)'}
 
 ## Task
-Analyze the issue and produce a fix. Return ONLY a JSON object with this exact shape:
+You MUST produce a code fix. Even if the issue is ambiguous, make your best judgment and implement a reasonable fix based on the files provided. Do NOT return an empty files array.
+
+Return ONLY a valid JSON object with this exact shape (no markdown, no preamble):
 {
   "files": [
     { "path": "path/to/file.ts", "content": "...complete file content..." }
@@ -38,18 +40,46 @@ Analyze the issue and produce a fix. Return ONLY a JSON object with this exact s
 }
 
 Rules:
-- Include ONLY files you modify.
+- You MUST include at least one file in the files array.
 - Write the COMPLETE new file content, not a diff.
-- If you cannot determine a fix, return valid JSON with an empty files array and an honest explanation.`
+- If the fix is small, still write the entire file.
+- Base your fix on the repository files shown above.`
 
-  const raw = await clod.complete([{ role: 'user', content: prompt }])
-
-  const jsonMatch = raw.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) throw new Error('Fix Agent returned no parseable JSON')
-
-  const parsed = JSON.parse(jsonMatch[0]) as Partial<FixOutput>
-  if (!Array.isArray(parsed.files)) {
-    throw new Error('Fix Agent returned malformed JSON: missing "files" array')
+  const parse = (raw: string): FixOutput | null => {
+    const match = raw.match(/\{[\s\S]*\}/)
+    if (!match) return null
+    try {
+      const parsed = JSON.parse(match[0]) as Partial<FixOutput>
+      if (!Array.isArray(parsed.files)) return null
+      return parsed as FixOutput
+    } catch {
+      return null
+    }
   }
-  return parsed as FixOutput
+
+  let raw = await clod.complete([{ role: 'user', content: prompt }])
+  let result = parse(raw)
+
+  if (!result || result.files.length === 0) {
+    // Retry with a more direct prompt using the first file as the target
+    const firstFile = repoCtx.files[0]
+    if (firstFile) {
+      const retryPrompt = `Fix this GitHub issue by modifying the file below. Return ONLY JSON.
+
+Issue: ${issue.title}
+${issue.body.slice(0, 500)}
+
+File to fix: ${firstFile.path}
+\`\`\`
+${firstFile.content.slice(0, 4000)}
+\`\`\`
+
+Return JSON: {"files":[{"path":"${firstFile.path}","content":"...complete fixed file..."}],"explanation":"...","prTitle":"fix: ...","prBody":"..."}`
+      raw = await clod.complete([{ role: 'user', content: retryPrompt }])
+      result = parse(raw)
+    }
+  }
+
+  if (!result) throw new Error('Fix Agent returned no parseable JSON after retry')
+  return result
 }

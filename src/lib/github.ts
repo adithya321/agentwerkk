@@ -50,6 +50,45 @@ export async function searchAndReadFiles(
     .filter((v): v is { path: string; content: string } => v !== null)
 }
 
+export async function listRepoFiles(
+  octokit: Octokit,
+  owner: string,
+  repo: string,
+  keywords: string[]
+): Promise<Array<{ path: string; content: string }>> {
+  const { data: tree } = await octokit.git.getTree({ owner, repo, tree_sha: 'HEAD', recursive: '1' })
+  const srcFiles = (tree.tree ?? [])
+    .filter((item) => item.type === 'blob' && /\.(ts|tsx|js|jsx|py|sol)$/.test(item.path ?? ''))
+    .map((item) => item.path!)
+
+  // Score each file by how many keywords appear in its path
+  const scored = srcFiles
+    .map((path) => {
+      const lower = path.toLowerCase()
+      const score = keywords.filter((kw) => lower.includes(kw.toLowerCase())).length
+      return { path, score }
+    })
+    .filter((f) => f.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5)
+
+  // If no keyword matches, take the top 5 src files as fallback
+  const targets = scored.length > 0 ? scored.map((f) => f.path) : srcFiles.slice(0, 5)
+
+  const contents = await Promise.allSettled(
+    targets.map(async (path) => {
+      const { data: fileData } = await octokit.repos.getContent({ owner, repo, path })
+      if (!('content' in fileData)) return null
+      return { path, content: Buffer.from(fileData.content as string, 'base64').toString('utf-8') }
+    })
+  )
+
+  return contents
+    .filter((r): r is PromiseFulfilledResult<{ path: string; content: string } | null> => r.status === 'fulfilled')
+    .map((r) => r.value)
+    .filter((v): v is { path: string; content: string } => v !== null)
+}
+
 export async function applyFixAndCreatePR(
   octokit: Octokit,
   owner: string,

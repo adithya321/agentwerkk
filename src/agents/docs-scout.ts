@@ -1,34 +1,50 @@
-import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js'
 import type { DocsContext } from '@/types'
 
+const NIA_BASE = 'https://apigcp.trynia.ai/v2'
+
 export async function runDocsScout(issue: { title: string; body: string }): Promise<DocsContext> {
-  if (!process.env.NIA_MCP_URL) {
-    console.warn('[Nia] NIA_MCP_URL not set — returning empty docs context')
+  const apiKey = process.env.NIA_API_KEY
+  if (!apiKey) {
+    console.warn('[Nia] NIA_API_KEY not set — returning empty docs context')
     return { docs: [] }
   }
 
-  const transport = new SSEClientTransport(new URL(process.env.NIA_MCP_URL))
-  const client = new Client(
-    { name: 'agentwerkk-docs-scout', version: '1.0.0' },
-    { capabilities: {} }
-  )
-
-  await client.connect(transport)
-
   const query = `${issue.title} ${issue.body.slice(0, 200)}`
-  const result = await client.callTool({
-    name: 'search',
-    arguments: { query },
-  })
 
-  await client.close()
+  try {
+    const response = await fetch(`${NIA_BASE}/search`, {
+      method: 'POST',
+      signal: AbortSignal.timeout(8_000),
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        mode: 'query',
+        messages: [{ role: 'user', content: query }],
+      }),
+    })
 
-  const content = result.content as Array<{ type: string; text: string }>
-  return {
-    docs: content
-      .filter((c) => c.type === 'text' && c.text.length > 0)
-      .slice(0, 3)
-      .map((c) => ({ source: 'Nia', content: c.text })),
+    if (!response.ok) {
+      console.warn('[Nia] Search failed:', response.status)
+      return { docs: [] }
+    }
+
+    const data = await response.json() as { content?: string; text?: string; results?: Array<{ content?: string; text?: string }> }
+
+    const text =
+      data.content ??
+      data.text ??
+      data.results?.map((r) => r.content ?? r.text ?? '').join('\n\n') ??
+      ''
+
+    if (!text) return { docs: [] }
+
+    return {
+      docs: [{ source: 'Nia', content: text.slice(0, 3000) }],
+    }
+  } catch (err) {
+    console.warn('[Nia] Search request failed:', err)
+    return { docs: [] }
   }
 }
