@@ -43,6 +43,7 @@ export interface ClodUsage {
 
 export type PipelineEvent =
   | { type: 'status'; agent: string; status: 'queued' | 'running' | 'done' | 'error'; message?: string }
+  | { type: 'log'; agent: string; message: string; level?: 'info' | 'warn' | 'error' }
   | { type: 'clod_usage'; data: ClodUsage }
   | { type: 'pr_created'; url: string }
   | { type: 'reputation_updated'; txHash: string; explorerUrl: string }

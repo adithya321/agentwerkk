@@ -1,12 +1,17 @@
 import { ClodClient } from '@/lib/clod'
-import type { RepoContext, DocsContext, FixOutput } from '@/types'
+import type { RepoContext, DocsContext, FixOutput, PipelineEvent } from '@/types'
 
 export async function runFixAgent(
   clod: ClodClient,
   issue: { title: string; body: string },
   repoCtx: RepoContext,
-  docsCtx: DocsContext
+  docsCtx: DocsContext,
+  send: (event: PipelineEvent) => void
 ): Promise<FixOutput> {
+  const log = (message: string, level?: 'info' | 'warn' | 'error') =>
+    send({ type: 'log', agent: 'fix-agent', message, level })
+  log(`Building prompt — ${repoCtx.files.length} repo file(s), ${docsCtx.docs.length} doc(s)`)
+
   const filesSection = repoCtx.files
     .map((f) => `### ${f.path}\n\`\`\`\n${f.content.slice(0, 3000)}\n\`\`\``)
     .join('\n\n')
@@ -45,6 +50,8 @@ Rules:
 - If the fix is small, still write the entire file.
 - Base your fix on the repository files shown above.`
 
+  log(`Prompt length: ${prompt.length} chars — sending to CLōD`)
+
   const parse = (raw: string): FixOutput | null => {
     const match = raw.match(/\{[\s\S]*\}/)
     if (!match) return null
@@ -58,12 +65,20 @@ Rules:
   }
 
   let raw = await clod.complete([{ role: 'user', content: prompt }])
+  log(`CLōD responded with ${raw.length} chars`)
+
   let result = parse(raw)
 
+  if (result) {
+    log(`Parsed fix: ${result.files.length} file(s) — "${result.prTitle}"`)
+  } else {
+    log('Parse failed or files array empty — attempting retry', 'warn')
+  }
+
   if (!result || result.files.length === 0) {
-    // Retry with a more direct prompt using the first file as the target
     const firstFile = repoCtx.files[0]
     if (firstFile) {
+      log(`Retry: targeting "${firstFile.path}" directly`)
       const retryPrompt = `Fix this GitHub issue by modifying the file below. Return ONLY JSON.
 
 Issue: ${issue.title}
@@ -76,7 +91,13 @@ ${firstFile.content.slice(0, 4000)}
 
 Return JSON: {"files":[{"path":"${firstFile.path}","content":"...complete fixed file..."}],"explanation":"...","prTitle":"fix: ...","prBody":"..."}`
       raw = await clod.complete([{ role: 'user', content: retryPrompt }])
+      log(`Retry CLōD response: ${raw.length} chars`)
       result = parse(raw)
+      if (result) {
+        log(`Retry parsed fix: ${result.files.length} file(s) — "${result.prTitle}"`)
+      } else {
+        log('Retry parse also failed', 'error')
+      }
     }
   }
 
