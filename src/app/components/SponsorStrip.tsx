@@ -7,7 +7,7 @@ export interface SponsorState {
   sub: string
 }
 
-interface CardConfig {
+export interface CardConfig {
   id: string
   cls: string
   logoChar: string
@@ -33,26 +33,27 @@ const CARDS: CardConfig[] = [
     foot: () => <>accept <b>100%</b><span>slots <b>3/3</b></span></>,
   },
   {
-    id: 'greptile', cls: 'sp-greptile', logoChar: '⌘',
-    name: 'Greptile', unit: 'M tok indexed', idleLabel: 'AI code review · awaiting PR',
-    barTo: 92, formatNum: (v) => v.toFixed(1),
-    foot: () => <>blockers <b>0</b><span>nits <b>1</b></span></>,
-  },
-  {
     id: 'nia', cls: 'sp-nia', logoChar: '▲',
     name: 'Nia', unit: 'docs', idleLabel: 'codebase intelligence · awaiting',
     barTo: 88, formatNum: (v) => String(Math.round(v)),
     foot: () => <>symbols <b>482</b><span>ttl <b>5m</b></span></>,
   },
   {
-    id: 'bga', cls: 'sp-bga', logoChar: '✦',
-    name: 'BGA · Chain for Good', unit: '% open-source', idleLabel: 'public-goods registry · awaiting',
-    barTo: 100, formatNum: (v) => String(Math.round(v)),
-    foot: () => <>license <b>MIT</b><span>registry <b>opengoods.xyz</b></span></>,
+    id: 'greptile', cls: 'sp-greptile', logoChar: '⌘',
+    name: 'Greptile', unit: 'M tok indexed', idleLabel: 'AI code review · awaiting PR',
+    barTo: 92, formatNum: (v) => v.toFixed(1),
+    foot: () => <>blockers <b>0</b><span>nits <b>1</b></span></>,
   },
 ]
 
-function SponsorCard({ config, data }: { config: CardConfig; data?: SponsorState }) {
+export const BGA_CARD: CardConfig = {
+  id: 'bga', cls: 'sp-bga', logoChar: '✦',
+  name: 'BGA · Chain for Good', unit: 'agents rated', idleLabel: 'public-goods registry · awaiting',
+  barTo: 100, formatNum: (v) => String(Math.round(v)),
+  foot: () => <>license <b>MIT</b><span>registry <b>opengoods.xyz</b></span></>,
+}
+
+export function SponsorCard({ config, data }: { config: CardConfig; data?: SponsorState }) {
   const active = !!data
   const animVal = useCountUp(active ? data!.value : 0, active, 900)
 
@@ -85,12 +86,12 @@ interface Props {
 }
 
 export default function SponsorStrip({ sponsors }: Props) {
-  const liveCount = Object.keys(sponsors).length
+  const liveCount = CARDS.filter(c => sponsors[c.id]).length
   return (
     <div>
       <div className="sponsors-head">
         <div className="ttl">Sponsor Stack · partner integrations</div>
-        <div className="sub">{liveCount}/5 partners live</div>
+        <div className="sub">{liveCount}/{CARDS.length} partners live</div>
       </div>
       <div className="sponsors">
         {CARDS.map((c) => (

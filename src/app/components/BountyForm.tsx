@@ -1,20 +1,27 @@
 'use client'
 import { useState } from 'react'
+import { DEMO_ISSUE_URL } from '@/lib/demo-script'
 
 interface Props {
   onSubmit: (issueUrl: string, bountyUsdc: number) => void
+  onDemo?: () => void
   disabled: boolean
 }
 
 const SUGGEST = [0.05, 0.10, 0.25, 1.00]
 
-export default function BountyForm({ onSubmit, disabled }: Props) {
+export default function BountyForm({ onSubmit, onDemo, disabled }: Props) {
   const [issueUrl, setIssueUrl] = useState('https://github.com/tanstack/query/issues/482')
-  const [bounty, setBounty] = useState(0.10)
+  const [bounty,   setBounty]   = useState(0.10)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onSubmit(issueUrl, bounty)
+  }
+
+  const handleDemo = () => {
+    setIssueUrl(DEMO_ISSUE_URL)
+    onDemo?.()
   }
 
   return (
@@ -80,6 +87,11 @@ export default function BountyForm({ onSubmit, disabled }: Props) {
               : <>▶ Post Bounty · Run Agents <span className="kbd">⌘ ↵</span></>
             }
           </button>
+          {!disabled && onDemo && (
+            <button className="demo-btn" type="button" onClick={handleDemo}>
+              ▷ Demo Run
+            </button>
+          )}
           <div className="submit-meta">
             <div className="balance">est. payout to 3 agents</div>
             <div>base-sepolia</div>
