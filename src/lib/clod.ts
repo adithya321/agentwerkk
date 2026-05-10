@@ -22,7 +22,7 @@ export class ClodClient {
       apiKey: requireEnv('CLOD_API_KEY'),
       baseURL: requireEnv('CLOD_BASE_URL'),
     })
-    this.model = process.env.CLOD_MODEL ?? 'claude-sonnet-4-6'
+    this.model = (process.env.CLOD_MODEL ?? 'claude-sonnet-4-6').trim()
   }
 
   async complete(messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>) {
@@ -32,6 +32,7 @@ export class ClodClient {
     })
     const usage = response.usage
     if (!usage) {
+      console.warn('[ClodClient] usage metadata missing — call not counted in cost tracker')
       return response.choices[0]?.message.content ?? ''
     }
     this.usageLogs.push({ prompt: usage.prompt_tokens, completion: usage.completion_tokens })
