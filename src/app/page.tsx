@@ -4,7 +4,7 @@ import BountyForm from './components/BountyForm'
 import PipelineLog from './components/PipelineLog'
 import ClodPanel from './components/ClodPanel'
 import OutputPanel from './components/OutputPanel'
-import type { PipelineEvent, ClodUsage } from '@/types'
+import type { PipelineEvent } from '@/types'
 
 export default function Home() {
   const [events, setEvents] = useState<PipelineEvent[]>([])
