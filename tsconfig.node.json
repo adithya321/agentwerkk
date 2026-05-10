@@ -5,7 +5,8 @@
     "moduleResolution": "node",
     "esModuleInterop": true,
     "strict": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "noEmit": true
   },
   "include": ["hardhat.config.ts", "contracts/test/**/*.ts", "scripts/**/*.ts"]
 }
