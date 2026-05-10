@@ -46,7 +46,7 @@ const CARDS: CardConfig[] = [
   },
   {
     id: 'bga', cls: 'sp-bga', logoChar: '✦',
-    name: 'BGA · Chain for Good', unit: '% open-source', idleLabel: 'public-goods registry · awaiting',
+    name: 'BGA · Chain for Good', unit: 'agents rated', idleLabel: 'public-goods registry · awaiting',
     barTo: 100, formatNum: (v) => String(Math.round(v)),
     foot: () => <>license <b>MIT</b><span>registry <b>opengoods.xyz</b></span></>,
   },

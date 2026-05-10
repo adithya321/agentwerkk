@@ -84,7 +84,7 @@ export const DEMO_EVENTS: DemoEntry[] = [
   // on-chain card lights up
   { delayMs: 14000, event: { type: 'reputation_updated', txHash: DEMO_TX_HASH, explorerUrl: `https://sepolia.basescan.org/tx/${DEMO_TX_HASH}` } },
   { delayMs: 14100, event: { type: 'status', agent: 'reputation', status: 'done', message: `https://sepolia.basescan.org/tx/${DEMO_TX_HASH}` } },
-  { delayMs: 14200, event: { type: 'sponsor', id: 'bga', value: 100, sub: 'reputation published to public-goods registry' } },
+  { delayMs: 14200, event: { type: 'sponsor', id: 'bga', value: 3, sub: 'reputation published to public-goods registry' } },
 
   // done
   { delayMs: 14300, event: { type: 'done' } },
