@@ -1,5 +1,5 @@
 import { Octokit } from '@octokit/rest'
-import { searchAndReadFiles } from '@/lib/github'
+import { searchAndReadFiles, listRepoFiles } from '@/lib/github'
 import type { RepoContext } from '@/types'
 
 export async function runRepoScout(
@@ -12,9 +12,12 @@ export async function runRepoScout(
     .replace(/[^a-zA-Z0-9 ]/g, ' ')
     .split(' ')
     .filter((w) => w.length > 3)
-    .slice(0, 6)
-    .join(' ')
+    .slice(0, 8)
 
-  const files = await searchAndReadFiles(octokit, owner, repo, keywords)
+  // Try GitHub code search first; fall back to tree-walk for new/unindexed repos
+  let files = await searchAndReadFiles(octokit, owner, repo, keywords.slice(0, 6).join(' '))
+  if (files.length === 0) {
+    files = await listRepoFiles(octokit, owner, repo, keywords)
+  }
   return { files }
 }

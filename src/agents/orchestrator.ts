@@ -45,6 +45,12 @@ export async function runPipeline({ issueUrl, bountyUsdc, send }: RunInput) {
   send({ type: 'clod_usage', data: clod.getTotalUsage() })
   send({ type: 'status', agent: 'fix-agent', status: 'done', message: `${fix.files.length} file(s) changed` })
 
+  if (fix.files.length === 0) {
+    send({ type: 'status', agent: 'github', status: 'error', message: 'No files to commit — fix agent could not determine changes' })
+    send({ type: 'done' })
+    return
+  }
+
   send({ type: 'status', agent: 'github', status: 'running', message: 'Creating PR...' })
   const prUrl = await applyFixAndCreatePR(octokit, owner, repo, fix)
   send({ type: 'pr_created', url: prUrl })
