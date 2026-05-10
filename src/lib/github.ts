@@ -1,8 +1,14 @@
 import { Octokit } from '@octokit/rest'
 import type { FixOutput } from '@/types'
 
+function requireEnv(name: 'GITHUB_TOKEN'): string {
+  const v = process.env[name]?.trim()
+  if (!v) throw new Error(`Missing required env var: ${name}`)
+  return v
+}
+
 export function makeOctokit() {
-  return new Octokit({ auth: process.env.GITHUB_TOKEN })
+  return new Octokit({ auth: requireEnv('GITHUB_TOKEN') })
 }
 
 export function parseIssueUrl(url: string): { owner: string; repo: string; issueNumber: number } {
@@ -29,9 +35,11 @@ export async function searchAndReadFiles(
     topFiles.map(async (item) => {
       const { data: fileData } = await octokit.repos.getContent({ owner, repo, path: item.path })
       if (!('content' in fileData)) return null
+      const raw = (fileData as { content?: string }).content
+      if (!raw) return null
       return {
         path: item.path,
-        content: Buffer.from(fileData.content as string, 'base64').toString('utf-8'),
+        content: Buffer.from(raw, 'base64').toString('utf-8'),
       }
     })
   )
