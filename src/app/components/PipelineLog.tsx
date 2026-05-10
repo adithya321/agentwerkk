@@ -1,82 +1,137 @@
-import type { PipelineEvent } from '@/types'
+'use client'
+import { useRef, useEffect } from 'react'
 
-const AGENT_LABELS: Record<string, string> = {
-  orchestrator: '🎯 Orchestrator',
-  allscale: '💳 AllScale',
-  clustly: '🔗 Clustly',
-  'repo-scout': '🔍 Repo Scout',
-  'docs-scout': '📚 Docs Scout',
-  'fix-agent': '🔧 Fix Agent',
-  github: '🐙 GitHub',
-  reputation: '⭐ Reputation',
+export interface AgentDef {
+  id: string
+  emoji: string
+  name: string
+  role: string
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  queued: 'text-gray-500',
-  running: 'text-yellow-400 animate-pulse',
-  done: 'text-green-400',
-  error: 'text-red-400',
+export interface AgentStatus {
+  status: 'queued' | 'running' | 'done' | 'error'
+  message?: string
+  ts?: number
 }
 
-const LOG_LEVEL_COLORS: Record<string, string> = {
-  info: 'text-gray-400',
-  warn: 'text-yellow-500',
-  error: 'text-red-400',
+export interface LogEntry {
+  ts: number
+  agent: string
+  message: string
+  level?: string
 }
 
-const AGENT_TAG_COLORS: Record<string, string> = {
-  orchestrator: 'text-purple-400',
-  allscale: 'text-blue-400',
-  clustly: 'text-cyan-400',
-  'repo-scout': 'text-sky-400',
-  'docs-scout': 'text-indigo-400',
-  'fix-agent': 'text-orange-400',
-  github: 'text-emerald-400',
-  reputation: 'text-yellow-400',
+interface Props {
+  agents: AgentDef[]
+  statuses: Record<string, AgentStatus>
+  logEntries: LogEntry[]
+  running: boolean
+  completedCount: number
+  elapsed: number
 }
 
-export default function PipelineLog({ events }: { events: PipelineEvent[] }) {
-  const statusEvents = events.filter(
-    (e): e is Extract<PipelineEvent, { type: 'status' }> => e.type === 'status'
-  )
-  const logEvents = events.filter(
-    (e): e is Extract<PipelineEvent, { type: 'log' }> => e.type === 'log'
-  )
+export default function PipelineLog({ agents, statuses, logEntries, running, completedCount, elapsed }: Props) {
+  const termRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (termRef.current) termRef.current.scrollTop = termRef.current.scrollHeight
+  }, [logEntries.length])
+
+  const runningCount = agents.filter((a) => statuses[a.id]?.status === 'running').length
 
   return (
-    <div className="border border-gray-800 rounded p-4 space-y-4 min-h-48">
-      {/* Status summary */}
-      <div>
-        <h2 className="text-xs text-gray-500 mb-3 uppercase tracking-widest">Pipeline</h2>
-        {statusEvents.length === 0 && <p className="text-gray-600 text-sm">Waiting for run...</p>}
-        <div className="space-y-1">
-          {statusEvents.map((e, i) => (
-            <div key={i} className="flex items-start gap-2 text-sm">
-              <span className="text-gray-600 w-6">{i + 1}.</span>
-              <span className="text-gray-300 w-36 shrink-0">{AGENT_LABELS[e.agent] ?? e.agent}</span>
-              <span className={STATUS_COLORS[e.status]}>{e.status}</span>
-              {e.message && <span className="text-gray-500 text-xs truncate">{e.message}</span>}
+    <>
+      {/* Pipeline */}
+      <div className={`panel${running ? ' running-pulse' : ''}`}>
+        <div className="panel-head">
+          <div className="ttl">
+            <span className="ix">02</span> Agent Pipeline
+          </div>
+          <div className="meta mono-tab">
+            {completedCount}/{agents.length} done · {(elapsed / 1000).toFixed(2)}s
+          </div>
+        </div>
+        <div className="panel-body" style={{ paddingBottom: 0 }}>
+          <div className="pipeline-list">
+            {agents.map((a, i) => {
+              const s = statuses[a.id] ?? { status: 'queued' as const }
+              return (
+                <div className="pl-row" key={a.id}>
+                  <div className="pl-ix">{String(i + 1).padStart(2, '0')}</div>
+                  <div className="pl-icon">{a.emoji}</div>
+                  <div className="pl-name">
+                    {a.name} <span className="role">· {a.role}</span>
+                  </div>
+                  <div className="pl-time">{s.ts != null ? (s.ts / 1000).toFixed(2) + 's' : '—'}</div>
+                  <div className={`pl-status ${s.status}`}>
+                    <span className={`dot ${s.status}`}></span> {s.status}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          <div className="pipeline-stats">
+            <div className="stat green">
+              <div className="k">success</div>
+              <div className="v">{completedCount}</div>
             </div>
-          ))}
+            <div className="stat">
+              <div className="k">running</div>
+              <div className="v">{runningCount}</div>
+            </div>
+            <div className="stat">
+              <div className="k">elapsed</div>
+              <div className="v">{(elapsed / 1000).toFixed(2)}s</div>
+            </div>
+            <div className="stat">
+              <div className="k">retries</div>
+              <div className="v">0</div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Detailed logs */}
-      {logEvents.length > 0 && (
-        <div>
-          <h2 className="text-xs text-gray-500 mb-2 uppercase tracking-widest">Logs</h2>
-          <div className="bg-gray-950 border border-gray-800 rounded p-3 max-h-64 overflow-y-auto space-y-0.5">
-            {logEvents.map((e, i) => (
-              <div key={i} className="flex items-start gap-2 text-xs leading-5">
-                <span className={`shrink-0 w-24 ${AGENT_TAG_COLORS[e.agent] ?? 'text-gray-400'}`}>
-                  [{e.agent}]
-                </span>
-                <span className={LOG_LEVEL_COLORS[e.level ?? 'info']}>{e.message}</span>
-              </div>
-            ))}
+      {/* Terminal logs */}
+      <div className="panel">
+        <div className="panel-head">
+          <div className="ttl"><span className="ix">03</span> Terminal · streamed logs</div>
+          <div className="meta">
+            <span style={{ color: 'var(--ink-4)' }}>tail -f</span>
+            <span style={{ padding: '2px 8px', fontSize: 11, color: 'var(--ink-2)', border: '1px solid var(--line)', borderRadius: 4 }}>
+              {logEntries.length} lines
+            </span>
           </div>
         </div>
-      )}
-    </div>
+        <div className="panel-body">
+          <div className="terminal" ref={termRef} style={{ height: 260 }}>
+            {logEntries.length === 0 && (
+              <div className="term-line">
+                <span className="term-ts">--:--</span>
+                <span className="term-tag" style={{ color: 'var(--ink-4)' }}>[system]</span>
+                <span className="term-msg" style={{ color: 'var(--ink-4)' }}>
+                  waiting for run<span className="term-cursor"></span>
+                </span>
+              </div>
+            )}
+            {logEntries.map((e, i) => (
+              <div className="term-line" key={i}>
+                <span className="term-ts">{(e.ts / 1000).toFixed(2)}s</span>
+                <span className={`term-tag tag-${e.agent}`}>[{e.agent}]</span>
+                <span className={`term-msg${e.level && e.level !== 'info' ? ' ' + e.level : ''}`}>{e.message}</span>
+              </div>
+            ))}
+            {running && (
+              <div className="term-line">
+                <span className="term-ts">…</span>
+                <span className="term-tag" style={{ color: 'var(--ink-4)' }}>[wait]</span>
+                <span className="term-msg" style={{ color: 'var(--ink-4)' }}>
+                  streaming<span className="term-cursor"></span>
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
   )
 }

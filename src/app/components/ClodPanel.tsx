@@ -1,30 +1,106 @@
+'use client'
+import { useState, useEffect } from 'react'
 import type { ClodUsage } from '@/types'
-export default function ClodPanel({ usage }: { usage: ClodUsage }) {
+
+function useCountUp(target: number, active: boolean, duration = 1200) {
+  const [v, setV] = useState(0)
+  useEffect(() => {
+    if (!active) { setV(0); return }
+    let raf: number
+    let start: number | null = null
+    const tick = (ts: number) => {
+      if (!start) start = ts
+      const t = Math.min(1, (ts - start) / duration)
+      const eased = 1 - Math.pow(1 - t, 3)
+      setV(target * eased)
+      if (t < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [target, active, duration])
+  return v
+}
+
+interface Props {
+  usage: ClodUsage | null
+  running: boolean
+  done: boolean
+}
+
+export default function ClodPanel({ usage, running, done }: Props) {
+  const has = !!usage
+  const animPct     = useCountUp(has ? usage!.savingsPct  : 0, has, 1400)
+  const animClod    = useCountUp(has ? usage!.clodCost    : 0, has, 1400)
+  const animDirect  = useCountUp(has ? usage!.directCost  : 0, has, 1400)
+  const animSavings = useCountUp(has ? usage!.savings     : 0, has, 1400)
+  const animTokens  = useCountUp(has ? usage!.totalTokens : 0, has, 1400)
+
+  const directCost = has ? usage!.directCost : 0.01180
+  const clodCost   = has ? usage!.clodCost   : 0.00284
+  const directW = 100
+  const clodW   = has ? Math.max(6, (clodCost / directCost) * 100) : 0
+
+  const liveLabel = running ? 'streaming' : has ? 'finalized' : done ? 'complete' : 'idle'
+
   return (
-    <div className="border border-blue-500 rounded p-4 mb-4">
-      <h2 className="text-blue-400 font-bold text-sm mb-3 uppercase tracking-widest">⚡ CLōD Usage</h2>
-      <div className="space-y-2 text-sm">
-        <div className="flex justify-between">
-          <span className="text-gray-400">Model</span>
-          <span className="text-white font-mono">{usage.model}</span>
+    <div className="clod">
+      <div className="clod-inner">
+        <div className="clod-head">
+          <div className="clod-eyebrow">
+            <span className="glyph">⚡</span> CLōD Usage · routed inference
+          </div>
+          <div className="clod-live">{liveLabel}</div>
         </div>
-        <div className="flex justify-between">
-          <span className="text-gray-400">Tokens used</span>
-          <span className="text-white">{usage.totalTokens.toLocaleString()}</span>
+
+        <p className="clod-title">
+          {has ? usage!.model : 'awaiting first model call…'}
+        </p>
+
+        <div className="savings-row">
+          <div>
+            <span className="savings-pct">{has ? Math.round(animPct) : '—'}</span>
+            <span className="savings-sym">{has ? '%' : ''}</span>
+          </div>
+          <div className="savings-tag"><span className="arrow">▼</span> savings vs direct</div>
         </div>
-        <div className="flex justify-between">
-          <span className="text-gray-400">Cost via CLōD</span>
-          <span className="text-green-400 font-bold">${usage.clodCost.toFixed(5)}</span>
+
+        <p className="savings-sub">
+          CLōD smart-routed this run — you paid{' '}
+          <b>${animClod.toFixed(5)}</b> instead of{' '}
+          <b>${animDirect.toFixed(5)}</b>, banking{' '}
+          <b style={{ color: 'var(--cyan)' }}>${animSavings.toFixed(5)}</b> in inference savings.
+        </p>
+
+        <div className="bars">
+          <div className="bar-row">
+            <div className="bar-label direct"><span className="d"></span>Direct API</div>
+            <div className="bar-track">
+              <div className="bar-fill direct" style={{ width: has ? directW + '%' : '0%' }}></div>
+            </div>
+            <div className="bar-amount direct mono-tab">${animDirect.toFixed(5)}</div>
+          </div>
+          <div className="bar-row">
+            <div className="bar-label clod-lbl"><span className="d"></span>CLōD</div>
+            <div className="bar-track">
+              <div className="bar-fill clod-fill" style={{ width: has ? clodW + '%' : '0%' }}></div>
+            </div>
+            <div className="bar-amount clod-amt mono-tab">${animClod.toFixed(5)}</div>
+          </div>
         </div>
-        <div className="flex justify-between">
-          <span className="text-gray-400">Direct API cost</span>
-          <span className="text-red-400 line-through">${usage.directCost.toFixed(5)}</span>
-        </div>
-        <div className="flex justify-between border-t border-gray-700 pt-2 mt-1">
-          <span className="font-bold text-white">Saved</span>
-          <span className="text-green-400 font-bold text-base">
-            ${usage.savings.toFixed(5)} ({usage.savingsPct}%)
-          </span>
+
+        <div className="clod-meta">
+          <div className="cell">
+            <div className="k">Tokens <span className="micro">in+out</span></div>
+            <div className="v mono-tab">{has ? Math.round(animTokens).toLocaleString() : '—'}</div>
+          </div>
+          <div className="cell">
+            <div className="k">Saved <span className="micro">vs direct</span></div>
+            <div className="v cyan mono-tab">{has ? `$${animSavings.toFixed(5)}` : '—'}</div>
+          </div>
+          <div className="cell">
+            <div className="k">Route <span className="micro">region</span></div>
+            <div className="v">us-west-2 <small>· batched</small></div>
+          </div>
         </div>
       </div>
     </div>

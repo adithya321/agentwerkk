@@ -1,37 +1,67 @@
-interface Props {
-  prUrl?: string
-  reputationTx?: { txHash: string; explorerUrl: string }
+interface PrData {
+  url: string
+  repo?: string
+  num?: number
 }
-export default function OutputPanel({ prUrl, reputationTx }: Props) {
+
+interface TxData {
+  hash: string
+  explorerUrl: string
+}
+
+interface Props {
+  pr: PrData | null
+  tx: TxData | null
+}
+
+export default function OutputPanel({ pr, tx }: Props) {
   return (
-    <div className="border border-green-800 rounded p-4 space-y-3">
-      <h2 className="text-green-400 font-bold text-sm uppercase tracking-widest">✅ Output</h2>
-      {prUrl && (
-        <div>
-          <p className="text-xs text-gray-500 mb-1">Pull Request</p>
-          <a
-            href={prUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-400 hover:text-blue-300 underline text-sm break-all"
-          >
-            {prUrl}
-          </a>
+    <div className="outs">
+      {/* PR card */}
+      <div className={`out-card${pr ? ' complete green-card' : ''}`}>
+        <div className="head">
+          <div className="label">Pull Request</div>
+          <div className="check">{pr ? '✓' : '·'}</div>
         </div>
-      )}
-      {reputationTx && (
-        <div>
-          <p className="text-xs text-gray-500 mb-1">Reputation Updated (Base Sepolia)</p>
-          <a
-            href={reputationTx.explorerUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-purple-400 hover:text-purple-300 underline text-sm font-mono break-all"
-          >
-            {reputationTx.txHash.slice(0, 20)}...
-          </a>
+        {pr ? (
+          <>
+            <div className="h3">PR {pr.num ? `#${pr.num}` : ''} opened</div>
+            <div className="sub">{pr.repo ?? 'github.com'}</div>
+            <a href={pr.url} target="_blank" rel="noopener noreferrer" className="link">
+              <span>🐙</span>
+              <span>{pr.url.replace('https://', '')}</span>
+              <span className="arr">↗</span>
+            </a>
+            <div className="out-foot"><span>awaiting review</span></div>
+          </>
+        ) : (
+          <div className="placeholder">— no PR yet —<br />opens when fix-agent → github completes</div>
+        )}
+      </div>
+
+      {/* On-chain card */}
+      <div className={`out-card${tx ? ' complete violet-card' : ''}`}>
+        <div className="head">
+          <div className="label">On-chain Reputation</div>
+          <div className="check">{tx ? '✓' : '·'}</div>
         </div>
-      )}
+        {tx ? (
+          <>
+            <div className="h3">tx confirmed</div>
+            <div className="sub">base-sepolia</div>
+            <a href={tx.explorerUrl} target="_blank" rel="noopener noreferrer" className="link">
+              <span style={{ color: 'var(--violet)' }}>⟁</span>
+              <span style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                {tx.hash.slice(0, 18)}…{tx.hash.slice(-6)}
+              </span>
+              <span className="arr">↗</span>
+            </a>
+            <div className="out-foot"><span>basescan.org/sepolia</span></div>
+          </>
+        ) : (
+          <div className="placeholder">— no tx yet —<br />fires after PR opens &amp; ratings publish</div>
+        )}
+      </div>
     </div>
   )
 }
