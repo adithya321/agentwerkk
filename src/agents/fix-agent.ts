@@ -47,5 +47,9 @@ Rules:
   const jsonMatch = raw.match(/\{[\s\S]*\}/)
   if (!jsonMatch) throw new Error('Fix Agent returned no parseable JSON')
 
-  return JSON.parse(jsonMatch[0]) as FixOutput
+  const parsed = JSON.parse(jsonMatch[0]) as Partial<FixOutput>
+  if (!Array.isArray(parsed.files)) {
+    throw new Error('Fix Agent returned malformed JSON: missing "files" array')
+  }
+  return parsed as FixOutput
 }
