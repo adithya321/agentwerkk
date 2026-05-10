@@ -6,6 +6,12 @@ const DIRECT_COSTS: Record<string, { input: number; output: number }> = {
 }
 const CLOD_SAVINGS_PCT = 60
 
+function requireEnv(name: 'CLOD_API_KEY' | 'CLOD_BASE_URL'): string {
+  const v = process.env[name]?.trim()
+  if (!v) throw new Error(`Missing required env var: ${name}`)
+  return v
+}
+
 export class ClodClient {
   private client: OpenAI
   private model: string
@@ -13,8 +19,8 @@ export class ClodClient {
 
   constructor() {
     this.client = new OpenAI({
-      apiKey: process.env.CLOD_API_KEY,
-      baseURL: process.env.CLOD_BASE_URL,
+      apiKey: requireEnv('CLOD_API_KEY'),
+      baseURL: requireEnv('CLOD_BASE_URL'),
     })
     this.model = process.env.CLOD_MODEL ?? 'claude-sonnet-4-6'
   }
@@ -24,9 +30,12 @@ export class ClodClient {
       model: this.model,
       messages,
     })
-    const usage = response.usage!
+    const usage = response.usage
+    if (!usage) {
+      return response.choices[0]?.message.content ?? ''
+    }
     this.usageLogs.push({ prompt: usage.prompt_tokens, completion: usage.completion_tokens })
-    return response.choices[0].message.content ?? ''
+    return response.choices[0]?.message.content ?? ''
   }
 
   getTotalUsage(): ClodUsage {

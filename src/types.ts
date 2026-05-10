@@ -49,9 +49,16 @@ export type PipelineEvent =
   | { type: 'done' }
   | { type: 'error'; message: string }
 
+const EVM_ADDRESS = /^0x[0-9a-fA-F]{40}$/
+
 function requireEnvAddress(name: string): `0x${string}` {
-  const val = process.env[name]
+  const val = process.env[name]?.trim()
   if (!val) throw new Error(`Missing required env var: ${name}`)
+  if (!EVM_ADDRESS.test(val)) {
+    const preview =
+      val.length <= 14 ? JSON.stringify(val) : JSON.stringify(`${val.slice(0, 10)}…${val.slice(-4)}`)
+    throw new Error(`${name} must be a 42-char hex EVM address (0x + 40 hex digits); got ${preview}`)
+  }
   return val as `0x${string}`
 }
 
