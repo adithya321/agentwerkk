@@ -182,8 +182,8 @@ export default function Home() {
           />
         </div>
         <div className="col">
-          <ClodPanel usage={clod} running={running} done={done} />
           <SponsorStrip sponsors={sponsors} />
+          <ClodPanel usage={clod} running={running} done={done} />
           <OutputPanel pr={pr} tx={tx} />
         </div>
       </div>
