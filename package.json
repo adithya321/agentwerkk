@@ -7,9 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "compile": "hardhat compile",
-    "test": "hardhat test",
-    "deploy": "hardhat run scripts/deploy.ts --network baseSepolia"
+    "compile": "TS_NODE_PROJECT=tsconfig.hardhat.json hardhat compile",
+    "test": "TS_NODE_PROJECT=tsconfig.hardhat.json hardhat test",
+    "deploy": "TS_NODE_PROJECT=tsconfig.hardhat.json hardhat run scripts/deploy.ts --network baseSepolia"
   },
   "dependencies": {
     "next": "15.3.2",

@@ -4,14 +4,23 @@ pragma solidity ^0.8.20;
 contract AgentReputation {
     mapping(address => uint256) public score;
 
+    address public immutable owner;
+
+    error Unauthorized();
+
     event ScoreUpdated(address indexed agent, uint256 newScore);
 
-    function increment(address agent) external {
-        score[agent]++;
-        emit ScoreUpdated(agent, score[agent]);
+    constructor() {
+        owner = msg.sender;
     }
 
-    function getScore(address agent) external view returns (uint256) {
-        return score[agent];
+    modifier onlyOwner() {
+        if (msg.sender != owner) revert Unauthorized();
+        _;
+    }
+
+    function increment(address agent) external onlyOwner {
+        score[agent]++;
+        emit ScoreUpdated(agent, score[agent]);
     }
 }

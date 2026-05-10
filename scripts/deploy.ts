@@ -7,4 +7,7 @@ async function main() {
   console.log('Add to .env.local: REPUTATION_CONTRACT_ADDRESS=' + address)
 }
 
-main().catch(console.error)
+main().catch((e) => {
+  console.error(e)
+  process.exit(1)
+})
