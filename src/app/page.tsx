@@ -5,6 +5,7 @@ import BountyForm from './components/BountyForm'
 import PipelineLog, { type AgentDef, type AgentStatus, type LogEntry } from './components/PipelineLog'
 import ClodPanel from './components/ClodPanel'
 import OutputPanel from './components/OutputPanel'
+import SponsorStrip, { type SponsorState } from './components/SponsorStrip'
 
 const AGENTS: AgentDef[] = [
   { id: 'orchestrator', emoji: '🎯', name: 'Orchestrator', role: 'plan + delegate' },
@@ -30,6 +31,7 @@ export default function Home() {
   const [clod, setClod] = useState<ClodUsage | null>(null)
   const [pr, setPr] = useState<{ url: string; repo?: string; num?: number } | null>(null)
   const [tx, setTx] = useState<{ hash: string; explorerUrl: string } | null>(null)
+  const [sponsors, setSponsors] = useState<Record<string, SponsorState>>({})
   const [running, setRunning] = useState(false)
   const [done, setDone] = useState(false)
   const t0Ref = useRef<number>(0)
@@ -40,6 +42,7 @@ export default function Home() {
     setClod(null)
     setPr(null)
     setTx(null)
+    setSponsors({})
     setRunning(true)
     setDone(false)
     t0Ref.current = Date.now()
@@ -86,6 +89,8 @@ export default function Home() {
           setPr({ url: event.url, repo: m?.[1], num: m ? parseInt(m[2], 10) : undefined })
         } else if (event.type === 'reputation_updated') {
           setTx({ hash: event.txHash, explorerUrl: event.explorerUrl })
+        } else if (event.type === 'sponsor') {
+          setSponsors((s) => ({ ...s, [event.id]: { value: event.value, sub: event.sub } }))
         } else if (event.type === 'done' || event.type === 'error') {
           setRunning(false)
           setDone(true)
@@ -169,6 +174,7 @@ export default function Home() {
         </div>
         <div className="col">
           <ClodPanel usage={clod} running={running} done={done} />
+          <SponsorStrip sponsors={sponsors} />
           <OutputPanel pr={pr} tx={tx} />
         </div>
       </div>
