@@ -71,7 +71,7 @@ export async function applyFixAndCreatePR(
   const { data: newCommit } = await octokit.git.createCommit({
     owner, repo, message: fix.prTitle, tree: newTree.sha, parents: [baseSha],
   })
-  const branchName = `agentwork/fix-${Date.now()}`
+  const branchName = `agentwerkk/fix-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
   await octokit.git.createRef({ owner, repo, ref: `refs/heads/${branchName}`, sha: newCommit.sha })
   const { data: pr } = await octokit.pulls.create({
     owner, repo, title: fix.prTitle, body: fix.prBody, head: branchName, base: baseBranch,

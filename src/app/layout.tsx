@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'AgentWork',
+  title: 'Agentwerkk',
   description: 'Autonomous bug-fixing pipeline — agents hired, paid, and rated on-chain',
 }
 
