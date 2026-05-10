@@ -280,7 +280,7 @@ body::before {
 .term-line { display: flex; gap: 10px; align-items: baseline; }
 .term-ts { color: var(--ink-4); flex-shrink: 0; font-size: 10.5px; font-variant-numeric: tabular-nums; min-width: 58px; }
 .term-tag { flex-shrink: 0; width: 110px; font-weight: 600; }
-.term-msg { color: var(--ink-2); }
+.term-msg { color: var(--ink-2); min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .term-msg.warn  { color: var(--amber); }
 .term-msg.error { color: var(--red); }
 .term-cursor {
