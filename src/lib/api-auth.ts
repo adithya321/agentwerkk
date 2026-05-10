@@ -16,7 +16,9 @@ export function authorizePipelineRequest(req: NextRequest): { ok: true } | { ok:
     return { ok: false, status: 401, message: 'Missing or invalid Authorization header' }
   }
   const token = tokenMatch[1]
-  if (token.length !== secret.length || !timingSafeEqual(Buffer.from(token, 'utf8'), Buffer.from(secret, 'utf8'))) {
+  const tokenBuf = Buffer.from(token, 'utf8')
+  const secretBuf = Buffer.from(secret, 'utf8')
+  if (tokenBuf.length !== secretBuf.length || !timingSafeEqual(tokenBuf, secretBuf)) {
     return { ok: false, status: 401, message: 'Unauthorized' }
   }
   return { ok: true }
