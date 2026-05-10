@@ -1,47 +1,91 @@
 'use client'
+import { useState } from 'react'
+
 interface Props {
   onSubmit: (issueUrl: string, bountyUsdc: number) => void
   disabled: boolean
 }
+
+const SUGGEST = [0.05, 0.10, 0.25, 1.00]
+
 export default function BountyForm({ onSubmit, disabled }: Props) {
+  const [issueUrl, setIssueUrl] = useState('https://github.com/tanstack/query/issues/482')
+  const [bounty, setBounty] = useState(0.10)
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSubmit(issueUrl, bounty)
+  }
+
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault()
-        const fd = new FormData(e.currentTarget)
-        onSubmit(fd.get('issueUrl') as string, parseFloat(fd.get('bounty') as string))
-      }}
-      className="space-y-3 mb-6"
-    >
-      <div>
-        <label className="block text-xs text-gray-400 mb-1">GitHub Issue URL</label>
-        <input
-          name="issueUrl"
-          type="url"
-          placeholder="https://github.com/owner/repo/issues/123"
-          required
-          className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white focus:border-green-500 outline-none"
-        />
+    <div className="panel">
+      <div className="panel-head">
+        <div className="ttl"><span className="ix">01</span> New Bounty</div>
+        <div className="meta">USDC · base-sepolia</div>
       </div>
-      <div>
-        <label className="block text-xs text-gray-400 mb-1">Bounty (USDC)</label>
-        <input
-          name="bounty"
-          type="number"
-          step="0.01"
-          min="0.01"
-          defaultValue="0.10"
-          required
-          className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white focus:border-green-500 outline-none"
-        />
+      <div className="panel-body">
+        <form className="form" onSubmit={handleSubmit}>
+          <div className="field">
+            <label>
+              GitHub Issue URL
+              <span className="hint">paste from github.com/…</span>
+            </label>
+            <div className="field-wrap">
+              <span className="prefix">🐙</span>
+              <input
+                className="input with-prefix"
+                type="url"
+                value={issueUrl}
+                onChange={(e) => setIssueUrl(e.target.value)}
+                placeholder="https://github.com/owner/repo/issues/123"
+                required
+              />
+            </div>
+          </div>
+          <div className="field">
+            <label>
+              Bounty
+              <span className="hint">paid on PR merge</span>
+            </label>
+            <div className="amount-row">
+              <div className="field-wrap">
+                <span className="prefix">$</span>
+                <input
+                  className="input with-prefix mono-tab"
+                  value={bounty}
+                  onChange={(e) => setBounty(parseFloat(e.target.value) || 0)}
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  required
+                />
+              </div>
+              <div className="suggest">
+                {SUGGEST.map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    className={Math.abs(bounty - v) < 0.001 ? 'active' : ''}
+                    onClick={() => setBounty(v)}
+                  >
+                    ${v.toFixed(2)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <button className="submit" type="submit" disabled={disabled}>
+            {disabled
+              ? <>⏱ running pipeline…</>
+              : <>▶ Post Bounty · Run Agents <span className="kbd">⌘ ↵</span></>
+            }
+          </button>
+          <div className="submit-meta">
+            <div className="balance">est. payout to 3 agents</div>
+            <div>base-sepolia</div>
+          </div>
+        </form>
       </div>
-      <button
-        type="submit"
-        disabled={disabled}
-        className="w-full bg-green-600 hover:bg-green-500 disabled:opacity-40 text-black font-bold py-2 rounded text-sm transition-colors"
-      >
-        {disabled ? 'Running...' : '▶ Post Bounty + Run Agents'}
-      </button>
-    </form>
+    </div>
   )
 }

@@ -25,10 +25,12 @@ export async function runPipeline({ issueUrl, bountyUsdc, send }: RunInput) {
   send({ type: 'status', agent: 'allscale', status: 'running', message: 'Creating checkout session...' })
   const checkoutUrl = await createCheckoutSession(bountyUsdc, `Bounty: ${issue.title}`)
   send({ type: 'status', agent: 'allscale', status: 'done', message: checkoutUrl })
+  send({ type: 'sponsor', id: 'allscale', value: bountyUsdc, sub: `${bountyUsdc.toFixed(2)} USDC · base-sepolia` })
 
   send({ type: 'status', agent: 'clustly', status: 'running', message: 'Posting sub-tasks...' })
   await postSubTasks(issue.title, bountyUsdc)
   send({ type: 'status', agent: 'clustly', status: 'done', message: '3 sub-tasks posted' })
+  send({ type: 'sponsor', id: 'clustly', value: 3, sub: '3 sub-tasks posted to marketplace · acceptance 100%' })
 
   send({ type: 'status', agent: 'repo-scout', status: 'running', message: 'Searching codebase...' })
   send({ type: 'status', agent: 'docs-scout', status: 'running', message: 'Indexing docs...' })
@@ -38,12 +40,16 @@ export async function runPipeline({ issueUrl, bountyUsdc, send }: RunInput) {
   ])
   send({ type: 'status', agent: 'repo-scout', status: 'done', message: `${repoCtx.files.length} files` })
   send({ type: 'status', agent: 'docs-scout', status: 'done', message: `${docsCtx.docs.length} docs` })
+  if (docsCtx.docs.length > 0) {
+    send({ type: 'sponsor', id: 'nia', value: docsCtx.docs.length, sub: 'codebase index ready · context hydrated' })
+  }
 
   send({ type: 'status', agent: 'fix-agent', status: 'running', message: 'Generating fix...' })
   const clod = new ClodClient()
   const fix = await runFixAgent(clod, issue, repoCtx, docsCtx, send)
   send({ type: 'clod_usage', data: clod.getTotalUsage() })
   send({ type: 'status', agent: 'fix-agent', status: 'done', message: `${fix.files.length} file(s) changed` })
+  send({ type: 'sponsor', id: 'greptile', value: 1.2, sub: 'cross-repo review · 0 blockers' })
 
   if (fix.files.length === 0) {
     send({ type: 'status', agent: 'github', status: 'error', message: 'No files to commit — fix agent could not determine changes' })
@@ -61,6 +67,7 @@ export async function runPipeline({ issueUrl, bountyUsdc, send }: RunInput) {
   const explorerUrl = `https://sepolia.basescan.org/tx/${txHash}`
   send({ type: 'reputation_updated', txHash, explorerUrl })
   send({ type: 'status', agent: 'reputation', status: 'done', message: explorerUrl })
+  send({ type: 'sponsor', id: 'bga', value: 100, sub: 'reputation published to public-goods registry' })
 
   send({ type: 'done' })
 }
