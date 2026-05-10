@@ -44,8 +44,7 @@ export default function PipelineLog({ events }: { events: PipelineEvent[] }) {
   )
 
   return (
-    <div className="border border-gray-800 rounded p-4 space-y-4">
-      {/* Status summary */}
+    <div className="border border-gray-800 rounded p-4 space-y-4 min-h-48">
       <div>
         <h2 className="text-xs text-gray-500 mb-3 uppercase tracking-widest">Pipeline</h2>
         {statusEvents.length === 0 && <p className="text-gray-600 text-sm">Waiting for run...</p>}
@@ -55,13 +54,12 @@ export default function PipelineLog({ events }: { events: PipelineEvent[] }) {
               <span className="text-gray-600 w-6">{i + 1}.</span>
               <span className="text-gray-300 w-36 shrink-0">{AGENT_LABELS[e.agent] ?? e.agent}</span>
               <span className={STATUS_COLORS[e.status]}>{e.status}</span>
-              {e.message && <span className="text-gray-500 text-xs">{e.message}</span>}
+              {e.message && <span className="text-gray-500 text-xs truncate">{e.message}</span>}
             </div>
           ))}
         </div>
       </div>
 
-      {/* Detailed logs */}
       {logEvents.length > 0 && (
         <div>
           <h2 className="text-xs text-gray-500 mb-2 uppercase tracking-widest">Logs</h2>
