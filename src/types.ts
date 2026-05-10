@@ -49,8 +49,14 @@ export type PipelineEvent =
   | { type: 'done' }
   | { type: 'error'; message: string }
 
+function requireEnvAddress(name: string): `0x${string}` {
+  const val = process.env[name]
+  if (!val) throw new Error(`Missing required env var: ${name}`)
+  return val as `0x${string}`
+}
+
 export const AGENT_WALLETS = {
-  repoScout: process.env.REPO_SCOUT_WALLET as `0x${string}`,
-  docsScout: process.env.DOCS_SCOUT_WALLET as `0x${string}`,
-  fixAgent: process.env.FIX_AGENT_WALLET as `0x${string}`,
+  repoScout: requireEnvAddress('REPO_SCOUT_WALLET'),
+  docsScout: requireEnvAddress('DOCS_SCOUT_WALLET'),
+  fixAgent: requireEnvAddress('FIX_AGENT_WALLET'),
 }
