@@ -42,10 +42,14 @@ export async function createCheckoutSession(
 
   const sigHeaders = signRequest('POST', path, '', body, process.env.ALLSCALE_API_SECRET!)
 
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 10_000)
+
   let response: Response
   try {
     response = await fetch(`${BASE_URL}${path}`, {
       method: 'POST',
+      signal: controller.signal,
       headers: {
         'X-API-Key': process.env.ALLSCALE_API_KEY!,
         'Content-Type': 'application/json',
@@ -56,6 +60,8 @@ export async function createCheckoutSession(
   } catch {
     console.warn('[AllScale] Network error, simulating checkout')
     return `${baseUrl}/simulated-checkout`
+  } finally {
+    clearTimeout(timeoutId)
   }
 
   if (!response.ok) {
