@@ -17,6 +17,7 @@ cache/
 typechain-types/
 
 # TypeScript
+dist/
 *.tsbuildinfo
 
 # OS
