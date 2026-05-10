@@ -64,8 +64,10 @@ function requireEnvAddress(name: string): `0x${string}` {
   return val as `0x${string}`
 }
 
-export const AGENT_WALLETS = {
-  repoScout: requireEnvAddress('REPO_SCOUT_WALLET'),
-  docsScout: requireEnvAddress('DOCS_SCOUT_WALLET'),
-  fixAgent: requireEnvAddress('FIX_AGENT_WALLET'),
+export function getAgentWallets() {
+  return {
+    repoScout: requireEnvAddress('REPO_SCOUT_WALLET'),
+    docsScout: requireEnvAddress('DOCS_SCOUT_WALLET'),
+    fixAgent: requireEnvAddress('FIX_AGENT_WALLET'),
+  }
 }

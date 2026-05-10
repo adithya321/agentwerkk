@@ -2,7 +2,7 @@ import { createPublicClient, createWalletClient, http, parseAbi } from 'viem'
 import { waitForTransactionReceipt } from 'viem/actions'
 import { baseSepolia } from 'viem/chains'
 import { privateKeyToAccount } from 'viem/accounts'
-import { AGENT_WALLETS } from '@/types'
+import { getAgentWallets } from '@/types'
 
 const ABI = parseAbi([
   'function increment(address agent) external',
@@ -20,7 +20,7 @@ export async function incrementAllReputations(): Promise<string> {
   const walletClient = createWalletClient({ account, chain: baseSepolia, transport: http(RPC) })
 
   let lastHash = '' as `0x${string}`
-  for (const wallet of Object.values(AGENT_WALLETS)) {
+  for (const wallet of Object.values(getAgentWallets())) {
     lastHash = await walletClient.writeContract({
       address: CONTRACT,
       abi: ABI,
