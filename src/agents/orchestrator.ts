@@ -33,15 +33,15 @@ export async function runPipeline({ issueUrl, bountyUsdc, send }: RunInput) {
   send({ type: 'status', agent: 'repo-scout', status: 'running', message: 'Searching codebase...' })
   send({ type: 'status', agent: 'docs-scout', status: 'running', message: 'Indexing docs...' })
   const [repoCtx, docsCtx] = await Promise.all([
-    runRepoScout(octokit, owner, repo, issue),
-    runDocsScout(issue),
+    runRepoScout(octokit, owner, repo, issue, send),
+    runDocsScout(issue, send),
   ])
   send({ type: 'status', agent: 'repo-scout', status: 'done', message: `${repoCtx.files.length} files` })
   send({ type: 'status', agent: 'docs-scout', status: 'done', message: `${docsCtx.docs.length} docs` })
 
   send({ type: 'status', agent: 'fix-agent', status: 'running', message: 'Generating fix...' })
   const clod = new ClodClient()
-  const fix = await runFixAgent(clod, issue, repoCtx, docsCtx)
+  const fix = await runFixAgent(clod, issue, repoCtx, docsCtx, send)
   send({ type: 'clod_usage', data: clod.getTotalUsage() })
   send({ type: 'status', agent: 'fix-agent', status: 'done', message: `${fix.files.length} file(s) changed` })
 
