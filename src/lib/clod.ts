@@ -31,12 +31,10 @@ export class ClodClient {
       messages,
     })
     const usage = response.usage
-    if (!usage) {
-      console.warn('[ClodClient] usage metadata missing — call not counted in cost tracker')
-      return response.choices[0]?.message.content ?? ''
-    }
+    if (!usage) throw new Error('No usage data in response')
     this.usageLogs.push({ prompt: usage.prompt_tokens, completion: usage.completion_tokens })
-    return response.choices[0]?.message.content ?? ''
+    const content = response.choices[0]?.message.content
+    return content ?? ''
   }
 
   getTotalUsage(): ClodUsage {
