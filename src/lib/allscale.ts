@@ -40,34 +40,25 @@ export async function createCheckoutSession(
 
   const sigHeaders = signRequest('POST', path, '', body, process.env.ALLSCALE_API_SECRET!)
 
-  const fallback = `${process.env.NEXT_PUBLIC_URL ?? 'http://localhost:3000'}/simulated-checkout`
-
-  let response: Response
-  try {
-    response = await fetch(`${BASE_URL}${path}`, {
-      method: 'POST',
-      signal: AbortSignal.timeout(10_000),
-      headers: {
-        'X-API-Key': process.env.ALLSCALE_API_KEY!,
-        'Content-Type': 'application/json',
-        ...sigHeaders,
-      },
-      body,
-    })
-  } catch (err) {
-    console.warn('[AllScale] request failed/timed out, simulating checkout:', err)
-    return fallback
-  }
+  const response = await fetch(`${BASE_URL}${path}`, {
+    method: 'POST',
+    headers: {
+      'X-API-Key': process.env.ALLSCALE_API_KEY!,
+      'Content-Type': 'application/json',
+      ...sigHeaders,
+    },
+    body,
+  })
 
   if (!response.ok) {
     console.warn('[AllScale] API error, simulating checkout:', response.status)
-    return fallback
+    return `${process.env.NEXT_PUBLIC_URL ?? 'http://localhost:3000'}/simulated-checkout`
   }
 
   const data = await response.json() as { code: number; payload?: { checkout_url?: string } }
   if (data.code !== 0 || !data.payload?.checkout_url) {
     console.warn('[AllScale] unexpected response, simulating checkout:', JSON.stringify(data))
-    return fallback
+    return `${process.env.NEXT_PUBLIC_URL ?? 'http://localhost:3000'}/simulated-checkout`
   }
   return data.payload.checkout_url
 }
