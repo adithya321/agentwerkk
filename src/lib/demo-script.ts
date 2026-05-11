@@ -54,12 +54,12 @@ export const DEMO_EVENTS: DemoEntry[] = [
   { delayMs: 5100, event: { type: 'status', agent: 'fix-agent', status: 'running', message: 'Generating fix…' } },
   { delayMs: 5300, event: { type: 'log', agent: 'fix-agent', message: 'Building prompt — 4 repo file(s), 3 doc(s)' } },
   { delayMs: 5700, event: { type: 'log', agent: 'fix-agent', message: 'Prompt length: 6 842 chars — sending to CLōD' } },
-  { delayMs: 6200, event: { type: 'log', agent: 'fix-agent', message: 'Waiting for CLōD inference (claude-sonnet-4-6)…' } },
+  { delayMs: 6200, event: { type: 'log', agent: 'fix-agent', message: 'Waiting for CLōD inference (grok-4)…' } },
   { delayMs: 7400, event: { type: 'log', agent: 'fix-agent', message: 'CLōD responded with 1 203 chars' } },
   { delayMs: 7800, event: { type: 'log', agent: 'fix-agent', message: 'Parsed fix: 1 file(s) — "fix: handle null payment processor reference"' } },
 
   // CLōD panel lights up
-  { delayMs: 9000, event: { type: 'clod_usage', data: { model: 'claude-sonnet-4-6', totalTokens: 8247, clodCost: 0.00284, directCost: 0.01180, savings: 0.00896, savingsPct: 75.9 } } },
+  { delayMs: 9000, event: { type: 'clod_usage', data: { model: 'grok-4', totalTokens: 8247, clodCost: 0.00284, directCost: 0.01180, savings: 0.00896, savingsPct: 75.9 } } },
 
   // fix-agent done + greptile sponsor
   { delayMs: 9100, event: { type: 'status', agent: 'fix-agent', status: 'done', message: '1 file(s) changed' } },
