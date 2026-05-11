@@ -15,11 +15,9 @@ export function getDemoEvents(model = 'grok-4'): DemoEntry[] { return [
   { delayMs: 0,    event: { type: 'status', agent: 'orchestrator', status: 'running', message: 'Fetching issue #42…' } },
   { delayMs: 800,  event: { type: 'status', agent: 'orchestrator', status: 'done',    message: 'fix: null pointer in payment processor' } },
 
-  // AllScale checkout
-  { delayMs: 900,  event: { type: 'status', agent: 'allscale', status: 'running', message: 'Creating checkout session…' } },
-  { delayMs: 1600, event: { type: 'allscale_checkout', url: 'https://checkout.allscale.io/cs_demo_x7f9' } },
-  { delayMs: 1650, event: { type: 'status', agent: 'allscale', status: 'done',    message: 'https://checkout.allscale.io/cs_demo_x7f9' } },
-  { delayMs: 1700, event: { type: 'sponsor', id: 'allscale', value: 0.10, sub: '0.10 USDC · base-sepolia' } },
+  // AllScale — payment already confirmed before stream
+  { delayMs: 900,  event: { type: 'status', agent: 'allscale', status: 'done', message: 'Payment confirmed' } },
+  { delayMs: 1000, event: { type: 'sponsor', id: 'allscale', value: 0.10, sub: '0.10 USDC · base-sepolia' } },
 
   // Clustly sub-tasks
   { delayMs: 1800, event: { type: 'status', agent: 'clustly', status: 'running', message: 'Posting sub-tasks…' } },
