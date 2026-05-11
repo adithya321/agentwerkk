@@ -1,5 +1,5 @@
 'use client'
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useMemo } from 'react'
 
 export interface AgentDef {
   id: string
@@ -33,9 +33,19 @@ interface Props {
 export default function PipelineLog({ agents, statuses, logEntries, running, completedCount, elapsed }: Props) {
   const termRef = useRef<HTMLDivElement>(null)
 
+  const dedupedLogs = useMemo(() => {
+    const seen = new Set<string>();
+    return logEntries.filter(log => {
+      const key = `${log.agent}-${log.message}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [logEntries]);
+
   useEffect(() => {
     if (termRef.current) termRef.current.scrollTop = termRef.current.scrollHeight
-  }, [logEntries.length])
+  }, [dedupedLogs.length])
 
   const runningCount = agents.filter((a) => statuses[a.id]?.status === 'running').length
 
@@ -94,42 +104,18 @@ export default function PipelineLog({ agents, statuses, logEntries, running, com
       {/* Terminal logs */}
       <div className="panel">
         <div className="panel-head">
-          <div className="ttl"><span className="ix">03</span> Terminal · streamed logs</div>
-          <div className="meta">
-            <span style={{ color: 'var(--ink-4)' }}>tail -f</span>
-            <span style={{ padding: '2px 8px', fontSize: 11, color: 'var(--ink-2)', border: '1px solid var(--line)', borderRadius: 4 }}>
-              {logEntries.length} lines
-            </span>
+          <div className="ttl">
+            <span className="ix">03</span> Terminal Logs
           </div>
         </div>
-        <div className="panel-body">
-          <div className="terminal" ref={termRef} style={{ height: 260 }}>
-            {logEntries.length === 0 && (
-              <div className="term-line">
-                <span className="term-ts">--:--</span>
-                <span className="term-tag" style={{ color: 'var(--ink-4)' }}>[system]</span>
-                <span className="term-msg" style={{ color: 'var(--ink-4)' }}>
-                  waiting for run<span className="term-cursor"></span>
-                </span>
-              </div>
-            )}
-            {logEntries.map((e, i) => (
-              <div className="term-line" key={i}>
-                <span className="term-ts">{(e.ts / 1000).toFixed(2)}s</span>
-                <span className={`term-tag tag-${e.agent}`}>[{e.agent}]</span>
-                <span className={`term-msg${e.level && e.level !== 'info' ? ' ' + e.level : ''}`}>{e.message}</span>
-              </div>
-            ))}
-            {running && (
-              <div className="term-line">
-                <span className="term-ts">…</span>
-                <span className="term-tag" style={{ color: 'var(--ink-4)' }}>[wait]</span>
-                <span className="term-msg" style={{ color: 'var(--ink-4)' }}>
-                  streaming<span className="term-cursor"></span>
-                </span>
-              </div>
-            )}
-          </div>
+        <div className="panel-body terminal" ref={termRef}>
+          {dedupedLogs.map((e, i) => (
+            <div key={i} className={`log-line ${e.level || ''}`}>
+              <span className="ts">[{new Date(e.ts).toLocaleTimeString()}]</span>
+              <span className="agent">{e.agent}:</span>
+              {e.message}
+            </div>
+          ))}
         </div>
       </div>
     </>
