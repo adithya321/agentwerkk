@@ -30,7 +30,7 @@ export default function OutputPanel({ pr, tx, checkoutUrl }: Props) {
             <div className="sub">USDC · base-sepolia</div>
             <a href={checkoutUrl} target="_blank" rel="noopener noreferrer" className="link">
               <span>◆</span>
-              <span>{checkoutUrl.replace('https://', '')}</span>
+              <span>{checkoutUrl.replace(/^https?:\/\//, '')}</span>
               <span className="arr">↗</span>
             </a>
             <div className="out-foot"><span>complete payment to fund bounty</span></div>
