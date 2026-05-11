@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback, Fragment } from 'react'
+import React, { useState, useEffect, useCallback, Fragment } from 'react'
 
 type BulletItem = { text: string; variant: 'check' | 'cross' }
 type SponsorItem = { name: string; description: string }
@@ -110,36 +110,38 @@ export default function SlidesPage() {
 
   const slide = SLIDES[current]
 
+  const footerLabel: React.CSSProperties = {
+    position: 'fixed', bottom: '24px',
+    fontFamily: 'JetBrains Mono, monospace',
+    fontSize: '0.75rem', color: 'var(--ink-4)', letterSpacing: '0.08em',
+  }
+
   return (
     <div
-      onClick={next}
       style={{
         minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        cursor: 'pointer',
         userSelect: 'none',
         padding: '48px',
         position: 'relative',
       }}
     >
+      {/* Left 30% — click to go back; right 70% — click to advance */}
+      <div style={{ position: 'fixed', inset: 0, display: 'flex', zIndex: 0 }}>
+        <div style={{ flex: '0 0 30%', cursor: 'w-resize' }} onClick={prev} />
+        <div style={{ flex: 1, cursor: 'e-resize' }} onClick={next} />
+      </div>
+
       {/* Slide counter — bottom right */}
-      <div style={{
-        position: 'fixed', bottom: '24px', right: '32px',
-        fontFamily: 'JetBrains Mono, monospace',
-        fontSize: '0.75rem', color: 'var(--ink-4)', letterSpacing: '0.08em',
-      }}>
+      <div style={{ ...footerLabel, right: '32px' }}>
         {current + 1} / {SLIDES.length}
       </div>
 
       {/* Timing — bottom left */}
-      <div style={{
-        position: 'fixed', bottom: '24px', left: '32px',
-        fontFamily: 'JetBrains Mono, monospace',
-        fontSize: '0.75rem', color: 'var(--ink-4)', letterSpacing: '0.08em',
-      }}>
+      <div style={{ ...footerLabel, left: '32px' }}>
         {slide.timing}
       </div>
 
@@ -150,7 +152,7 @@ export default function SlidesPage() {
           fontSize: '0.72rem', color: 'var(--ink-4)',
           fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.06em',
         }}>
-          click · space · → to advance
+          ← click left · click right → · space · ↑↓ arrows
         </div>
       )}
 
@@ -211,8 +213,8 @@ export default function SlidesPage() {
         {/* Bullets */}
         {slide.bullets && (
           <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {slide.bullets.map((b) => (
-              <li key={b.text} style={{
+            {slide.bullets.map((b, i) => (
+              <li key={i} style={{
                 display: 'flex', alignItems: 'flex-start', gap: '12px',
                 fontSize: 'clamp(0.95rem, 2vw, 1.15rem)',
                 color: 'var(--ink-2)', fontFamily: 'Inter, sans-serif', lineHeight: 1.5,
