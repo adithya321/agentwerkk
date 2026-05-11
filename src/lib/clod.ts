@@ -21,6 +21,7 @@ export class ClodClient {
     this.client = new OpenAI({
       apiKey: requireEnv('CLOD_API_KEY'),
       baseURL: requireEnv('CLOD_BASE_URL'),
+      timeout: 60_000,
     })
     this.model = (process.env.CLOD_MODEL ?? 'claude-sonnet-4-6').trim()
   }
@@ -29,6 +30,7 @@ export class ClodClient {
     const response = await this.client.chat.completions.create({
       model: this.model,
       messages,
+      max_tokens: 4096,
     })
     const usage = response.usage
     if (!usage) throw new Error('No usage data in response')
