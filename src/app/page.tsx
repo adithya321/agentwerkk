@@ -64,6 +64,7 @@ export default function Home() {
       setClod(event.data)
     } else if (event.type === 'allscale_checkout') {
       setCheckout(event.url)
+      window.open(event.url, '_blank', 'noopener,noreferrer')
     } else if (event.type === 'pr_created') {
       const m = event.url.match(/github\.com\/([^/]+\/[^/]+)\/pull\/(\d+)/)
       setPr({ url: event.url, repo: m?.[1], num: m ? parseInt(m[2], 10) : undefined })
