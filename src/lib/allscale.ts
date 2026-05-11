@@ -82,8 +82,12 @@ export async function createCheckoutSession(
 }
 
 export async function verifyPayment(intentId: string): Promise<boolean> {
-  if (intentId.startsWith(SIM_PREFIX)) return true
-  if (!process.env.ALLSCALE_API_KEY || !process.env.ALLSCALE_API_SECRET) return true
+  if (!process.env.ALLSCALE_API_KEY || !process.env.ALLSCALE_API_SECRET) {
+    console.warn('[AllScale] credentials not set — skipping payment verification')
+    return true
+  }
+  if (intentId.startsWith(SIM_PREFIX)) return false
+  if (!/^[\w-]{1,64}$/.test(intentId)) return false
 
   const path = `/v1/checkout_intents/${intentId}/status`
   const sigHeaders = signRequest('GET', path, '', '', process.env.ALLSCALE_API_SECRET!)
