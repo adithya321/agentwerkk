@@ -101,8 +101,8 @@ export default function SlidesPage() {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next() }
-      if (e.key === 'ArrowLeft') { e.preventDefault(); prev() }
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); next() }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prev() }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
