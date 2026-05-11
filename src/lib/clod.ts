@@ -28,17 +28,21 @@ export class ClodClient {
   }
 
   async complete(messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>) {
+    const maxTokens = parseInt(process.env.CLOD_MAX_TOKENS ?? '8192', 10)
     const response = await this.client.chat.completions.create({
       model: this.model,
       messages,
-      max_tokens: 4096,
+      max_tokens: maxTokens,
     })
+    const choice = response.choices[0]
+    if (choice?.finish_reason === 'length') {
+      throw new Error(`CLōD response truncated at ${maxTokens} tokens — set CLOD_MAX_TOKENS higher`)
+    }
     const usage = response.usage
     if (!usage) throw new Error('No usage data in response')
     this.usageLogs.push({ prompt: usage.prompt_tokens, completion: usage.completion_tokens })
     this.actualModel = response.model ?? this.model
-    const content = response.choices[0]?.message.content
-    return content ?? ''
+    return choice?.message.content ?? ''
   }
 
   getTotalUsage(): ClodUsage {
