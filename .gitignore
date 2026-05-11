@@ -34,3 +34,4 @@ CLAUDE.md
 *.log
 npm-debug.log*
 .vercel
+.clustly/
