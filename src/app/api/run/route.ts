@@ -1,14 +1,8 @@
 import { NextRequest } from 'next/server'
-import { authorizePipelineRequest } from '@/lib/api-auth'
 import { runPipeline } from '@/agents/orchestrator'
 import type { PipelineEvent } from '@/types'
 
 export async function POST(req: NextRequest) {
-  const auth = authorizePipelineRequest(req)
-  if (!auth.ok) {
-    return Response.json({ error: auth.message }, { status: auth.status })
-  }
-
   let body: Record<string, unknown>
   try {
     const parsed = await req.json()
