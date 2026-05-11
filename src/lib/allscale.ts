@@ -21,13 +21,23 @@ function signRequest(
   }
 }
 
+const SIM_PREFIX = 'sim_intent_'
+
+function simFallback(): { checkoutUrl: string; intentId: string } {
+  return {
+    checkoutUrl: `${process.env.NEXT_PUBLIC_URL ?? 'http://localhost:3000'}/simulated-checkout`,
+    intentId: SIM_PREFIX + Math.random().toString(36).slice(2, 10),
+  }
+}
+
 export async function createCheckoutSession(
   amountUsdc: number,
-  description: string
-): Promise<string> {
+  description: string,
+  redirectUrl: string
+): Promise<{ checkoutUrl: string; intentId: string }> {
   if (!process.env.ALLSCALE_API_KEY || !process.env.ALLSCALE_API_SECRET) {
     console.warn('[AllScale] credentials not set — simulating checkout')
-    return `${process.env.NEXT_PUBLIC_URL ?? 'http://localhost:3000'}/simulated-checkout`
+    return simFallback()
   }
 
   const path = '/v1/checkout_intents/'
@@ -35,7 +45,7 @@ export async function createCheckoutSession(
     stable_coin: 1,
     amount_cents: Math.round(amountUsdc * 100),
     order_description: description,
-    redirect_url: `${process.env.NEXT_PUBLIC_URL ?? 'http://localhost:3000'}/?payment=success`,
+    redirect_url: redirectUrl,
   })
 
   const sigHeaders = signRequest('POST', path, '', body, process.env.ALLSCALE_API_SECRET!)
@@ -52,13 +62,44 @@ export async function createCheckoutSession(
 
   if (!response.ok) {
     console.warn('[AllScale] API error, simulating checkout:', response.status)
-    return `${process.env.NEXT_PUBLIC_URL ?? 'http://localhost:3000'}/simulated-checkout`
+    return simFallback()
   }
 
-  const data = await response.json() as { code: number; payload?: { checkout_url?: string } }
-  if (data.code !== 0 || !data.payload?.checkout_url) {
-    console.warn('[AllScale] unexpected response, simulating checkout:', JSON.stringify(data))
-    return `${process.env.NEXT_PUBLIC_URL ?? 'http://localhost:3000'}/simulated-checkout`
+  const data = await response.json() as {
+    code: number
+    payload?: { checkout_url?: string; allscale_checkout_intent_id?: string }
   }
-  return data.payload.checkout_url
+
+  if (data.code !== 0 || !data.payload?.checkout_url || !data.payload?.allscale_checkout_intent_id) {
+    console.warn('[AllScale] unexpected response, simulating checkout:', JSON.stringify(data))
+    return simFallback()
+  }
+
+  return {
+    checkoutUrl: data.payload.checkout_url,
+    intentId: data.payload.allscale_checkout_intent_id,
+  }
+}
+
+export async function verifyPayment(intentId: string): Promise<boolean> {
+  if (intentId.startsWith(SIM_PREFIX)) return true
+  if (!process.env.ALLSCALE_API_KEY || !process.env.ALLSCALE_API_SECRET) return true
+
+  const path = `/v1/checkout_intents/${intentId}/status`
+  const sigHeaders = signRequest('GET', path, '', '', process.env.ALLSCALE_API_SECRET!)
+
+  try {
+    const response = await fetch(`${BASE_URL}${path}`, {
+      method: 'GET',
+      headers: {
+        'X-API-Key': process.env.ALLSCALE_API_KEY!,
+        ...sigHeaders,
+      },
+    })
+    if (!response.ok) return false
+    const data = await response.json() as { code: number; payload?: number }
+    return data.code === 0 && data.payload === 20
+  } catch {
+    return false
+  }
 }
