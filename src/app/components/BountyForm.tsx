@@ -2,15 +2,23 @@
 import { useState } from 'react'
 import { DEMO_ISSUE_URL } from '@/lib/demo-script'
 
+const CLOD_MODELS = [
+  { id: 'grok-4',            label: 'Grok 4' },
+  { id: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6' },
+  { id: 'gpt-4o',            label: 'GPT-4o' },
+]
+
 interface Props {
   onSubmit: (issueUrl: string, bountyUsdc: number) => void
   onDemo?: () => void
   disabled: boolean
+  model: string
+  onModelChange: (model: string) => void
 }
 
 const SUGGEST = [0.05, 0.10, 0.25, 1.00]
 
-export default function BountyForm({ onSubmit, onDemo, disabled }: Props) {
+export default function BountyForm({ onSubmit, onDemo, disabled, model, onModelChange }: Props) {
   const [issueUrl, setIssueUrl] = useState('https://github.com/tanstack/query/issues/482')
   const [bounty,   setBounty]   = useState(0.10)
 
@@ -79,6 +87,26 @@ export default function BountyForm({ onSubmit, onDemo, disabled }: Props) {
                   </button>
                 ))}
               </div>
+            </div>
+          </div>
+          <div className="field">
+            <label>
+              CLōD Model
+              <span className="hint">inference provider</span>
+            </label>
+            <div className="field-wrap">
+              <span className="prefix">⚡</span>
+              <select
+                className="input with-prefix"
+                value={model}
+                onChange={(e) => onModelChange(e.target.value)}
+                disabled={disabled}
+                style={{ cursor: 'pointer' }}
+              >
+                {CLOD_MODELS.map((m) => (
+                  <option key={m.id} value={m.id}>{m.label}</option>
+                ))}
+              </select>
             </div>
           </div>
           <button className="submit" type="submit" disabled={disabled}>

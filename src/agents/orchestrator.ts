@@ -11,10 +11,11 @@ import type { PipelineEvent } from '@/types'
 interface RunInput {
   issueUrl: string
   bountyUsdc: number
+  model?: string
   send: (event: PipelineEvent) => void
 }
 
-export async function runPipeline({ issueUrl, bountyUsdc, send }: RunInput) {
+export async function runPipeline({ issueUrl, bountyUsdc, model, send }: RunInput) {
   const octokit = makeOctokit()
   const { owner, repo, issueNumber } = parseIssueUrl(issueUrl)
 
@@ -46,7 +47,7 @@ export async function runPipeline({ issueUrl, bountyUsdc, send }: RunInput) {
   }
 
   send({ type: 'status', agent: 'fix-agent', status: 'running', message: 'Generating fix...' })
-  const clod = new ClodClient()
+  const clod = new ClodClient(model)
   const fix = await runFixAgent(clod, issue, repoCtx, docsCtx, send)
   send({ type: 'clod_usage', data: clod.getTotalUsage() })
   send({ type: 'status', agent: 'fix-agent', status: 'done', message: `${fix.files.length} file(s) changed` })

@@ -33,6 +33,7 @@ export default function Home() {
   const [checkout,   setCheckout]   = useState<string | null>(null)
   const [running,    setRunning]    = useState(false)
   const [done,       setDone]       = useState(false)
+  const [model,      setModel]      = useState('grok-4')
   const t0Ref = useRef<number>(0)
 
   // Shared event dispatcher — used by both SSE stream and demo replay
@@ -95,7 +96,7 @@ export default function Home() {
     const response = await fetch('/api/run', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ issueUrl, bountyUsdc }),
+      body: JSON.stringify({ issueUrl, bountyUsdc, model }),
     })
 
     const reader = response.body!.getReader()
@@ -176,7 +177,7 @@ export default function Home() {
 
       <div className="grid-layout">
         <div className="col">
-          <BountyForm onSubmit={handleSubmit} onDemo={runDemo} disabled={running} />
+          <BountyForm onSubmit={handleSubmit} onDemo={runDemo} disabled={running} model={model} onModelChange={setModel} />
           <PipelineLog
             agents={AGENTS}
             statuses={statuses}

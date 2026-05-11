@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
   }
   const issueUrl = body.issueUrl
   const bountyUsdc = body.bountyUsdc
+  const model = typeof body.model === 'string' && body.model.trim() ? body.model.trim() : undefined
 
   if (
     typeof issueUrl !== 'string' ||
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`))
       }
       try {
-        await runPipeline({ issueUrl, bountyUsdc, send })
+        await runPipeline({ issueUrl, bountyUsdc, model, send })
       } catch (e) {
         send({ type: 'error', message: String(e) })
       } finally {
