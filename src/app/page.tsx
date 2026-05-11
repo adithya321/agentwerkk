@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import type { PipelineEvent, ClodUsage } from '@/types'
 import BountyForm from './components/BountyForm'
 import PipelineLog, { type AgentDef, type AgentStatus, type LogEntry } from './components/PipelineLog'
@@ -23,6 +23,8 @@ const INITIAL_STATUSES = (): Record<string, AgentStatus> =>
     {} as Record<string, AgentStatus>
   )
 
+const PENDING_KEY = 'allscale_pending_intent'
+
 export default function Home() {
   const [statuses,   setStatuses]   = useState<Record<string, AgentStatus>>(INITIAL_STATUSES)
   const [logEntries, setLogEntries] = useState<LogEntry[]>([])
@@ -36,7 +38,6 @@ export default function Home() {
   const [model,      setModel]      = useState('grok-4')
   const t0Ref = useRef<number>(0)
 
-  // Shared event dispatcher — used by both SSE stream and demo replay
   const consumeEvent = useCallback((event: PipelineEvent) => {
     const ts = Date.now() - t0Ref.current
 
@@ -89,14 +90,25 @@ export default function Home() {
     t0Ref.current = Date.now()
   }
 
-  const handleSubmit = useCallback(async (issueUrl: string, bountyUsdc: number) => {
+  const streamPipeline = useCallback(async (intentId: string, issueUrl: string, bountyUsdc: number, modelName: string) => {
     resetState()
 
     const response = await fetch('/api/run', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ issueUrl, bountyUsdc, model }),
+      body: JSON.stringify({ intentId, issueUrl, bountyUsdc, model: modelName }),
     })
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ error: 'Pipeline failed' })) as { error?: string }
+      setLogEntries((prev) => [
+        ...prev,
+        { ts: 0, agent: 'system', message: err.error ?? 'Pipeline failed', level: 'error' },
+      ])
+      setRunning(false)
+      setDone(true)
+      return
+    }
 
     const reader = response.body!.getReader()
     const decoder = new TextDecoder()
@@ -107,7 +119,7 @@ export default function Home() {
       try {
         consumeEvent(JSON.parse(line.slice(6)) as PipelineEvent)
       } catch {
-        // ignore malformed / partial frames
+        // ignore malformed frames
       }
     }
 
@@ -123,6 +135,45 @@ export default function Home() {
     for (const line of buffer.split('\n')) consumeSseLine(line)
     setRunning(false)
   }, [consumeEvent])
+
+  // On mount: detect AllScale redirect and auto-start pipeline
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('payment') !== 'success') return
+
+    const issueUrl  = params.get('issue_url')
+    const bounty    = parseFloat(params.get('bounty') ?? '0')
+    const modelName = params.get('model') ?? 'grok-4'
+    const stored    = sessionStorage.getItem(PENDING_KEY)
+    const intentId  = stored ? (JSON.parse(stored) as { intentId: string }).intentId : null
+
+    sessionStorage.removeItem(PENDING_KEY)
+    window.history.replaceState({}, '', '/')
+
+    if (!issueUrl || !bounty || !intentId) return
+
+    setModel(modelName)
+    streamPipeline(intentId, issueUrl, bounty, modelName)
+  }, [streamPipeline])
+
+  const handleSubmit = useCallback(async (issueUrl: string, bountyUsdc: number) => {
+    setRunning(true)
+
+    const res = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ issueUrl, bountyUsdc, model }),
+    })
+
+    if (!res.ok) {
+      setRunning(false)
+      return
+    }
+
+    const { checkoutUrl, intentId } = await res.json() as { checkoutUrl: string; intentId: string }
+    sessionStorage.setItem(PENDING_KEY, JSON.stringify({ intentId }))
+    window.location.href = checkoutUrl
+  }, [model])
 
   const runDemo = useCallback(() => {
     resetState()
