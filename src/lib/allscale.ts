@@ -2,10 +2,6 @@ import crypto from 'crypto'
 
 const BASE_URL = 'https://openapi.allscale.io'
 
-// Server-side store: intentId → amount in cents authorized at checkout creation time.
-// Prevents clients from inflating bountyUsdc via query params after paying a smaller amount.
-const intentAmountCents = new Map<string, number>()
-
 function signRequest(
   method: string,
   path: string,
@@ -27,10 +23,36 @@ function signRequest(
 
 const SIM_PREFIX = 'sim_intent_'
 
-function simFallback(): { checkoutUrl: string; intentId: string } {
+function makeAmountToken(intentId: string, amountCents: number): string {
+  const secret = process.env.ALLSCALE_API_SECRET ?? 'dev-secret'
+  const payload = JSON.stringify({ id: intentId, amt: amountCents })
+  const sig = crypto.createHmac('sha256', secret).update(payload).digest('hex')
+  return Buffer.from(payload).toString('base64') + '.' + sig
+}
+
+function parseAmountToken(token: string, intentId: string, requestedCents: number): boolean {
+  try {
+    const dot = token.indexOf('.')
+    if (dot === -1) return false
+    const encodedPayload = token.slice(0, dot)
+    const sig = token.slice(dot + 1)
+    const payload = Buffer.from(encodedPayload, 'base64').toString('utf8')
+    const secret = process.env.ALLSCALE_API_SECRET ?? 'dev-secret'
+    const expectedSig = crypto.createHmac('sha256', secret).update(payload).digest('hex')
+    if (sig !== expectedSig) return false
+    const parsed = JSON.parse(payload) as { id: string; amt: number }
+    return parsed.id === intentId && requestedCents <= parsed.amt
+  } catch {
+    return false
+  }
+}
+
+function simFallback(): { checkoutUrl: string; intentId: string; amountToken: string } {
+  const intentId = SIM_PREFIX + Math.random().toString(36).slice(2, 10)
   return {
     checkoutUrl: `${process.env.NEXT_PUBLIC_URL ?? 'http://localhost:3000'}/simulated-checkout`,
-    intentId: SIM_PREFIX + Math.random().toString(36).slice(2, 10),
+    intentId,
+    amountToken: makeAmountToken(intentId, 0),
   }
 }
 
@@ -38,7 +60,7 @@ export async function createCheckoutSession(
   amountUsdc: number,
   description: string,
   redirectUrl: string
-): Promise<{ checkoutUrl: string; intentId: string }> {
+): Promise<{ checkoutUrl: string; intentId: string; amountToken: string }> {
   if (!process.env.ALLSCALE_API_KEY || !process.env.ALLSCALE_API_SECRET) {
     console.warn('[AllScale] credentials not set — simulating checkout')
     return simFallback()
@@ -78,14 +100,19 @@ export async function createCheckoutSession(
   }
 
   const intentId = data.payload.allscale_checkout_intent_id
-  intentAmountCents.set(intentId, Math.round(amountUsdc * 100))
+  const amountToken = makeAmountToken(intentId, Math.round(amountUsdc * 100))
   return {
     checkoutUrl: data.payload.checkout_url,
     intentId,
+    amountToken,
   }
 }
 
-export async function verifyPayment(intentId: string, requestedAmountUsdc: number): Promise<boolean> {
+export async function verifyPayment(
+  intentId: string,
+  requestedAmountUsdc: number,
+  amountToken: string
+): Promise<boolean> {
   if (!process.env.ALLSCALE_API_KEY || !process.env.ALLSCALE_API_SECRET) {
     console.warn('[AllScale] credentials not set — skipping payment verification')
     return true
@@ -93,9 +120,8 @@ export async function verifyPayment(intentId: string, requestedAmountUsdc: numbe
   if (intentId.startsWith(SIM_PREFIX)) return false
   if (!/^[\w-]{1,64}$/.test(intentId)) return false
 
-  const authorizedCents = intentAmountCents.get(intentId)
   const requestedCents = Math.round(requestedAmountUsdc * 100)
-  if (authorizedCents === undefined || requestedCents > authorizedCents) return false
+  if (!parseAmountToken(amountToken, intentId, requestedCents)) return false
 
   const path = `/v1/checkout_intents/${intentId}/status`
   const sigHeaders = signRequest('GET', path, '', '', process.env.ALLSCALE_API_SECRET!)

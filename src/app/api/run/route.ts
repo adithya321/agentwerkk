@@ -17,20 +17,22 @@ export async function POST(req: NextRequest) {
   const issueUrl = body.issueUrl
   const bountyUsdc = body.bountyUsdc
   const intentId = body.intentId
+  const amountToken = body.amountToken
   const model = typeof body.model === 'string' && body.model.trim() ? body.model.trim() : undefined
 
   if (
     typeof issueUrl !== 'string' || !issueUrl.trim() ||
     typeof bountyUsdc !== 'number' || !Number.isFinite(bountyUsdc) || bountyUsdc <= 0 ||
-    typeof intentId !== 'string' || !intentId.trim()
+    typeof intentId !== 'string' || !intentId.trim() ||
+    typeof amountToken !== 'string' || !amountToken.trim()
   ) {
     return Response.json(
-      { error: 'issueUrl, a positive bountyUsdc, and intentId are required' },
+      { error: 'issueUrl, a positive bountyUsdc, intentId, and amountToken are required' },
       { status: 400 }
     )
   }
 
-  const paid = await verifyPayment(intentId, bountyUsdc)
+  const paid = await verifyPayment(intentId, bountyUsdc, amountToken)
   if (!paid) {
     return Response.json({ error: 'Payment not confirmed' }, { status: 402 })
   }

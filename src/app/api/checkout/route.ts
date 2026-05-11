@@ -30,11 +30,11 @@ export async function POST(req: NextRequest) {
     `&bounty=${bountyUsdc}` +
     `&model=${encodeURIComponent(model)}`
 
-  const { checkoutUrl, intentId } = await createCheckoutSession(
+  const { checkoutUrl, intentId, amountToken } = await createCheckoutSession(
     bountyUsdc,
     `Bounty: ${issueUrl}`,
     redirectUrl
   )
 
-  return Response.json({ checkoutUrl, intentId })
+  return Response.json({ checkoutUrl, intentId, amountToken })
 }

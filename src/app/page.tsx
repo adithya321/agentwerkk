@@ -90,13 +90,13 @@ export default function Home() {
     t0Ref.current = Date.now()
   }
 
-  const streamPipeline = useCallback(async (intentId: string, issueUrl: string, bountyUsdc: number, modelName: string) => {
+  const streamPipeline = useCallback(async (intentId: string, amountToken: string, issueUrl: string, bountyUsdc: number, modelName: string) => {
     resetState()
 
     const response = await fetch('/api/run', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ intentId, issueUrl, bountyUsdc, model: modelName }),
+      body: JSON.stringify({ intentId, amountToken, issueUrl, bountyUsdc, model: modelName }),
     })
 
     if (!response.ok) {
@@ -144,16 +144,18 @@ export default function Home() {
     const issueUrl  = params.get('issue_url')
     const bounty    = parseFloat(params.get('bounty') ?? '0')
     const modelName = params.get('model') ?? 'grok-4'
-    const stored    = sessionStorage.getItem(PENDING_KEY)
-    const intentId  = stored ? (JSON.parse(stored) as { intentId: string }).intentId : null
+    const stored      = sessionStorage.getItem(PENDING_KEY)
+    const parsed      = stored ? (JSON.parse(stored) as { intentId: string; amountToken: string }) : null
+    const intentId    = parsed?.intentId ?? null
+    const amountToken = parsed?.amountToken ?? null
 
     sessionStorage.removeItem(PENDING_KEY)
     window.history.replaceState({}, '', '/')
 
-    if (!issueUrl || !bounty || !intentId) return
+    if (!issueUrl || !bounty || !intentId || !amountToken) return
 
     setModel(modelName)
-    streamPipeline(intentId, issueUrl, bounty, modelName)
+    streamPipeline(intentId, amountToken, issueUrl, bounty, modelName)
   }, [streamPipeline])
 
   const handleSubmit = useCallback(async (issueUrl: string, bountyUsdc: number) => {
@@ -170,8 +172,8 @@ export default function Home() {
       return
     }
 
-    const { checkoutUrl, intentId } = await res.json() as { checkoutUrl: string; intentId: string }
-    sessionStorage.setItem(PENDING_KEY, JSON.stringify({ intentId }))
+    const { checkoutUrl, intentId, amountToken } = await res.json() as { checkoutUrl: string; intentId: string; amountToken: string }
+    sessionStorage.setItem(PENDING_KEY, JSON.stringify({ intentId, amountToken }))
     window.location.href = checkoutUrl
   }, [model])
 
