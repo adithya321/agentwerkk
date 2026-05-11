@@ -12,11 +12,34 @@ interface TxData {
 interface Props {
   pr: PrData | null
   tx: TxData | null
+  checkoutUrl: string | null
 }
 
-export default function OutputPanel({ pr, tx }: Props) {
+export default function OutputPanel({ pr, tx, checkoutUrl }: Props) {
   return (
     <div className="outs">
+      {/* AllScale checkout card */}
+      <div className={`out-card${checkoutUrl ? ' complete' : ''}`} style={checkoutUrl ? { borderColor: 'var(--green)', background: 'rgba(0,200,120,0.04)' } : {}}>
+        <div className="head">
+          <div className="label">AllScale Checkout</div>
+          <div className="check">{checkoutUrl ? '✓' : '·'}</div>
+        </div>
+        {checkoutUrl ? (
+          <>
+            <div className="h3">session created</div>
+            <div className="sub">USDC · base-sepolia</div>
+            <a href={checkoutUrl} target="_blank" rel="noopener noreferrer" className="link">
+              <span>◆</span>
+              <span>{checkoutUrl.replace('https://', '')}</span>
+              <span className="arr">↗</span>
+            </a>
+            <div className="out-foot"><span>complete payment to fund bounty</span></div>
+          </>
+        ) : (
+          <div className="placeholder">— no session yet —<br />opens when bounty is posted</div>
+        )}
+      </div>
+
       {/* PR card */}
       <div className={`out-card${pr ? ' complete green-card' : ''}`}>
         <div className="head">

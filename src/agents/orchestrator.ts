@@ -24,6 +24,7 @@ export async function runPipeline({ issueUrl, bountyUsdc, send }: RunInput) {
 
   send({ type: 'status', agent: 'allscale', status: 'running', message: 'Creating checkout session...' })
   const checkoutUrl = await createCheckoutSession(bountyUsdc, `Bounty: ${issue.title}`)
+  send({ type: 'allscale_checkout', url: checkoutUrl })
   send({ type: 'status', agent: 'allscale', status: 'done', message: checkoutUrl })
   send({ type: 'sponsor', id: 'allscale', value: bountyUsdc, sub: `${bountyUsdc.toFixed(2)} USDC · base-sepolia` })
 
