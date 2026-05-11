@@ -6,7 +6,7 @@ import PipelineLog, { type AgentDef, type AgentStatus, type LogEntry } from './c
 import ClodPanel from './components/ClodPanel'
 import OutputPanel from './components/OutputPanel'
 import SponsorStrip, { SponsorCard, BGA_CARD, type SponsorState } from './components/SponsorStrip'
-import { DEMO_EVENTS } from '@/lib/demo-script'
+import { getDemoEvents } from '@/lib/demo-script'
 
 const AGENTS: AgentDef[] = [
   { id: 'orchestrator', emoji: '🎯', name: 'Orchestrator', role: 'plan + delegate' },
@@ -32,6 +32,7 @@ export default function Home() {
   const [sponsors,   setSponsors]   = useState<Record<string, SponsorState>>({})
   const [running,    setRunning]    = useState(false)
   const [done,       setDone]       = useState(false)
+  const [model,      setModel]      = useState('grok-4')
   const t0Ref = useRef<number>(0)
 
   // Shared event dispatcher — used by both SSE stream and demo replay
@@ -90,7 +91,7 @@ export default function Home() {
     const response = await fetch('/api/run', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ issueUrl, bountyUsdc }),
+      body: JSON.stringify({ issueUrl, bountyUsdc, model }),
     })
 
     const reader = response.body!.getReader()
@@ -121,10 +122,10 @@ export default function Home() {
 
   const runDemo = useCallback(() => {
     resetState()
-    DEMO_EVENTS.forEach(({ delayMs, event }) => {
+    getDemoEvents(model).forEach(({ delayMs, event }) => {
       setTimeout(() => consumeEvent(event), delayMs)
     })
-  }, [consumeEvent])
+  }, [consumeEvent, model])
 
   const completedCount = AGENTS.filter((a) => statuses[a.id]?.status === 'done').length
   const elapsed        = logEntries.length ? logEntries[logEntries.length - 1].ts : 0
@@ -171,7 +172,7 @@ export default function Home() {
 
       <div className="grid-layout">
         <div className="col">
-          <BountyForm onSubmit={handleSubmit} onDemo={runDemo} disabled={running} />
+          <BountyForm onSubmit={handleSubmit} onDemo={runDemo} disabled={running} model={model} onModelChange={setModel} />
           <PipelineLog
             agents={AGENTS}
             statuses={statuses}

@@ -30,7 +30,7 @@ const CARDS: CardConfig[] = [
     id: 'clustly', cls: 'sp-clustly', logoChar: '⌬',
     name: 'Clustly', unit: 'tasks', idleLabel: 'sub-task marketplace · awaiting',
     barTo: 100, formatNum: (v) => String(Math.round(v)),
-    foot: () => <>accept <b>100%</b><span>slots <b>3/3</b></span></>,
+    foot: () => <>accept <b>100%</b><span><a href="https://www.clustly.ai/directory/agentwerk" target="_blank" rel="noopener noreferrer" style={{color:'inherit',textDecoration:'underline'}}>directory/agentwerk</a></span></>,
   },
   {
     id: 'nia', cls: 'sp-nia', logoChar: '▲',

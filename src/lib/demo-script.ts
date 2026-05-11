@@ -10,7 +10,7 @@ export const DEMO_ISSUE_URL = 'https://github.com/acme-corp/payment-api/issues/4
 const DEMO_PR_URL = 'https://github.com/acme-corp/payment-api/pull/142'
 const DEMO_TX_HASH = '0x4a9f2e8c1b3d7f6a0e5c2b9d4f1a8e3c7b0d5f2a9e6c3b0d7f4a1e8c5b2d9f6a'
 
-export const DEMO_EVENTS: DemoEntry[] = [
+export function getDemoEvents(model = 'grok-4'): DemoEntry[] { return [
   // Orchestrator
   { delayMs: 0,    event: { type: 'status', agent: 'orchestrator', status: 'running', message: 'Fetching issue #42…' } },
   { delayMs: 800,  event: { type: 'status', agent: 'orchestrator', status: 'done',    message: 'fix: null pointer in payment processor' } },
@@ -54,12 +54,12 @@ export const DEMO_EVENTS: DemoEntry[] = [
   { delayMs: 5100, event: { type: 'status', agent: 'fix-agent', status: 'running', message: 'Generating fix…' } },
   { delayMs: 5300, event: { type: 'log', agent: 'fix-agent', message: 'Building prompt — 4 repo file(s), 3 doc(s)' } },
   { delayMs: 5700, event: { type: 'log', agent: 'fix-agent', message: 'Prompt length: 6 842 chars — sending to CLōD' } },
-  { delayMs: 6200, event: { type: 'log', agent: 'fix-agent', message: 'Waiting for CLōD inference (claude-sonnet-4-6)…' } },
+  { delayMs: 6200, event: { type: 'log', agent: 'fix-agent', message: `Waiting for CLōD inference (${model})…` } },
   { delayMs: 7400, event: { type: 'log', agent: 'fix-agent', message: 'CLōD responded with 1 203 chars' } },
   { delayMs: 7800, event: { type: 'log', agent: 'fix-agent', message: 'Parsed fix: 1 file(s) — "fix: handle null payment processor reference"' } },
 
   // CLōD panel lights up
-  { delayMs: 9000, event: { type: 'clod_usage', data: { model: 'claude-sonnet-4-6', totalTokens: 8247, clodCost: 0.00284, directCost: 0.01180, savings: 0.00896, savingsPct: 75.9 } } },
+  { delayMs: 9000, event: { type: 'clod_usage', data: { model, totalTokens: 8247, clodCost: 0.00284, directCost: 0.01180, savings: 0.00896, savingsPct: 75.9 } } },
 
   // fix-agent done + greptile sponsor
   { delayMs: 9100, event: { type: 'status', agent: 'fix-agent', status: 'done', message: '1 file(s) changed' } },
@@ -88,4 +88,6 @@ export const DEMO_EVENTS: DemoEntry[] = [
 
   // done
   { delayMs: 14300, event: { type: 'done' } },
-]
+] }
+
+export const DEMO_EVENTS = getDemoEvents()

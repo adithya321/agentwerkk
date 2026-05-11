@@ -15,16 +15,17 @@ function requireEnv(name: 'CLOD_API_KEY' | 'CLOD_BASE_URL'): string {
 export class ClodClient {
   private client: OpenAI
   private model: string
-  private actualModel = 'claude-sonnet-4-6'
+  private actualModel: string
   private usageLogs: Array<{ prompt: number; completion: number }> = []
 
-  constructor() {
+  constructor(modelOverride?: string) {
     this.client = new OpenAI({
       apiKey: requireEnv('CLOD_API_KEY'),
       baseURL: requireEnv('CLOD_BASE_URL'),
       timeout: 180_000,
     })
-    this.model = (process.env.CLOD_MODEL ?? 'claude-sonnet-4-6').trim()
+    this.model = modelOverride?.trim() || (process.env.CLOD_MODEL ?? 'claude-sonnet-4-6').trim()
+    this.actualModel = this.model
   }
 
   async complete(messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>) {
