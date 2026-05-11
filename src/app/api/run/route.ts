@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const paid = await verifyPayment(intentId)
+  const paid = await verifyPayment(intentId, bountyUsdc)
   if (!paid) {
     return Response.json({ error: 'Payment not confirmed' }, { status: 402 })
   }

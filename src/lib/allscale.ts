@@ -2,6 +2,10 @@ import crypto from 'crypto'
 
 const BASE_URL = 'https://openapi.allscale.io'
 
+// Server-side store: intentId → amount in cents authorized at checkout creation time.
+// Prevents clients from inflating bountyUsdc via query params after paying a smaller amount.
+const intentAmountCents = new Map<string, number>()
+
 function signRequest(
   method: string,
   path: string,
@@ -73,19 +77,25 @@ export async function createCheckoutSession(
     throw new Error(`[AllScale] unexpected checkout response: ${JSON.stringify(data)}`)
   }
 
+  const intentId = data.payload.allscale_checkout_intent_id
+  intentAmountCents.set(intentId, Math.round(amountUsdc * 100))
   return {
     checkoutUrl: data.payload.checkout_url,
-    intentId: data.payload.allscale_checkout_intent_id,
+    intentId,
   }
 }
 
-export async function verifyPayment(intentId: string): Promise<boolean> {
+export async function verifyPayment(intentId: string, requestedAmountUsdc: number): Promise<boolean> {
   if (!process.env.ALLSCALE_API_KEY || !process.env.ALLSCALE_API_SECRET) {
     console.warn('[AllScale] credentials not set — skipping payment verification')
     return true
   }
   if (intentId.startsWith(SIM_PREFIX)) return false
   if (!/^[\w-]{1,64}$/.test(intentId)) return false
+
+  const authorizedCents = intentAmountCents.get(intentId)
+  const requestedCents = Math.round(requestedAmountUsdc * 100)
+  if (authorizedCents === undefined || requestedCents > authorizedCents) return false
 
   const path = `/v1/checkout_intents/${intentId}/status`
   const sigHeaders = signRequest('GET', path, '', '', process.env.ALLSCALE_API_SECRET!)
