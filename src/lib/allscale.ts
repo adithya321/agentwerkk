@@ -61,8 +61,7 @@ export async function createCheckoutSession(
   })
 
   if (!response.ok) {
-    console.warn('[AllScale] API error, simulating checkout:', response.status)
-    return simFallback()
+    throw new Error(`[AllScale] checkout API error: ${response.status}`)
   }
 
   const data = await response.json() as {
@@ -71,8 +70,7 @@ export async function createCheckoutSession(
   }
 
   if (data.code !== 0 || !data.payload?.checkout_url || !data.payload?.allscale_checkout_intent_id) {
-    console.warn('[AllScale] unexpected response, simulating checkout:', JSON.stringify(data))
-    return simFallback()
+    throw new Error(`[AllScale] unexpected checkout response: ${JSON.stringify(data)}`)
   }
 
   return {
