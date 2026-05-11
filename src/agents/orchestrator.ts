@@ -1,7 +1,6 @@
 import { makeOctokit, parseIssueUrl, getIssue, applyFixAndCreatePR } from '@/lib/github'
 import { ClodClient } from '@/lib/clod'
 import { incrementAllReputations } from '@/lib/reputation'
-import { createCheckoutSession } from '@/lib/allscale'
 import { postSubTasks } from '@/lib/clustly'
 import { runRepoScout } from './repo-scout'
 import { runDocsScout } from './docs-scout'
@@ -23,10 +22,8 @@ export async function runPipeline({ issueUrl, bountyUsdc, model, send }: RunInpu
   const issue = await getIssue(octokit, owner, repo, issueNumber)
   send({ type: 'status', agent: 'orchestrator', status: 'done', message: issue.title })
 
-  send({ type: 'status', agent: 'allscale', status: 'running', message: 'Creating checkout session...' })
-  const checkoutUrl = await createCheckoutSession(bountyUsdc, `Bounty: ${issue.title}`)
-  send({ type: 'allscale_checkout', url: checkoutUrl })
-  send({ type: 'status', agent: 'allscale', status: 'done', message: checkoutUrl })
+  // Payment was confirmed before the stream opened — mark allscale done immediately
+  send({ type: 'status', agent: 'allscale', status: 'done', message: 'Payment confirmed' })
   send({ type: 'sponsor', id: 'allscale', value: bountyUsdc, sub: `${bountyUsdc.toFixed(2)} USDC · base-sepolia` })
 
   send({ type: 'status', agent: 'clustly', status: 'running', message: 'Posting sub-tasks...' })
