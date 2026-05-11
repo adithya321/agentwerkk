@@ -46,6 +46,7 @@ export type PipelineEvent =
   | { type: 'log'; agent: string; message: string; level?: 'info' | 'warn' | 'error' }
   | { type: 'sponsor'; id: string; value: number; sub: string }
   | { type: 'clod_usage'; data: ClodUsage }
+  | { type: 'allscale_checkout'; url: string }
   | { type: 'pr_created'; url: string }
   | { type: 'reputation_updated'; txHash: string; explorerUrl: string }
   | { type: 'done' }

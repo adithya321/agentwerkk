@@ -17,7 +17,8 @@ export function getDemoEvents(model = 'grok-4'): DemoEntry[] { return [
 
   // AllScale checkout
   { delayMs: 900,  event: { type: 'status', agent: 'allscale', status: 'running', message: 'Creating checkout session…' } },
-  { delayMs: 1600, event: { type: 'status', agent: 'allscale', status: 'done',    message: 'https://checkout.allscale.io/cs_demo_x7f9' } },
+  { delayMs: 1600, event: { type: 'allscale_checkout', url: 'https://checkout.allscale.io/cs_demo_x7f9' } },
+  { delayMs: 1650, event: { type: 'status', agent: 'allscale', status: 'done',    message: 'https://checkout.allscale.io/cs_demo_x7f9' } },
   { delayMs: 1700, event: { type: 'sponsor', id: 'allscale', value: 0.10, sub: '0.10 USDC · base-sepolia' } },
 
   // Clustly sub-tasks

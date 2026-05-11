@@ -30,6 +30,7 @@ export default function Home() {
   const [pr,         setPr]         = useState<{ url: string; repo?: string; num?: number } | null>(null)
   const [tx,         setTx]         = useState<{ hash: string; explorerUrl: string } | null>(null)
   const [sponsors,   setSponsors]   = useState<Record<string, SponsorState>>({})
+  const [checkout,   setCheckout]   = useState<string | null>(null)
   const [running,    setRunning]    = useState(false)
   const [done,       setDone]       = useState(false)
   const [model,      setModel]      = useState('grok-4')
@@ -60,6 +61,8 @@ export default function Home() {
       ])
     } else if (event.type === 'clod_usage') {
       setClod(event.data)
+    } else if (event.type === 'allscale_checkout') {
+      setCheckout(event.url)
     } else if (event.type === 'pr_created') {
       const m = event.url.match(/github\.com\/([^/]+\/[^/]+)\/pull\/(\d+)/)
       setPr({ url: event.url, repo: m?.[1], num: m ? parseInt(m[2], 10) : undefined })
@@ -79,6 +82,7 @@ export default function Home() {
     setClod(null)
     setPr(null)
     setTx(null)
+    setCheckout(null)
     setSponsors({})
     setRunning(true)
     setDone(false)
@@ -185,7 +189,7 @@ export default function Home() {
         <div className="col">
           <SponsorStrip sponsors={sponsors} />
           <ClodPanel usage={clod} running={running} done={done} />
-          <OutputPanel pr={pr} tx={tx} />
+          <OutputPanel pr={pr} tx={tx} checkoutUrl={checkout} />
           <div className="sponsors" style={{ gridTemplateColumns: '1fr' }}>
             <SponsorCard config={BGA_CARD} data={sponsors['bga']} />
           </div>
